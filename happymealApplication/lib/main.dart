@@ -1,4 +1,6 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:happymeal_application/firebase_options.dart';
 import 'package:happymeal_application/models/drink_provider.dart';
 import 'package:happymeal_application/models/exercise_model.dart';
 import 'package:happymeal_application/models/health_provider.dart';
@@ -14,7 +16,12 @@ import 'package:happymeal_application/pages/homePage.dart';
 // import 'package:happymeal_application/pages/99_blankpage.dart';
 import 'package:provider/provider.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+    await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(
     MultiProvider(
       providers: [

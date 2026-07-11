@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "235221398188",
+    "project_id": "is767-2025-3-b4182",
+    "storage_bucket": "is767-2025-3-b4182.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:235221398188:android:ef4a8aebdb044c00c76509",
+        "android_client_info": {
+          "package_name": "com.example.happymeal_application"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQ8EhiIJ9dyEEGzDuE-iepMBF_Gy7CaNM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
