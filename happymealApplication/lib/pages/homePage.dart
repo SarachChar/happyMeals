@@ -1,0 +1,483 @@
+import 'package:flutter/material.dart';
+import 'package:happymeal_application/models/drink_provider.dart';
+import 'package:happymeal_application/models/exercise_model.dart';
+import 'package:happymeal_application/models/health_provider.dart';
+import 'package:happymeal_application/models/meals_summary_model.dart';
+import 'package:provider/provider.dart';
+
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
+  // Daily goals (used for the progress ring / summary card).
+  static const int calorieGoal = 2200;
+  static const int exerciseGoalMinutes = 60;
+
+  static const List<String> _weekdays = [
+    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+  ];
+  static const List<String> _months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    final mealsData = context.watch<MealsSummaryModel>();
+    final exerciseData = context.watch<ExerciseModel>();
+    final healthData = context.watch<HealthProvider>();
+    final drinkData = context.watch<DrinkProvider>();
+
+    final today = DateTime.now();
+    final todayKey = drinkData.formatDate(today);
+
+    final int totalFoodCalories = mealsData.totalCalories;
+    final int drinkCalories = drinkData.totalCaloriesFor(todayKey);
+    final int totalCalories = totalFoodCalories + drinkCalories;
+
+    final int exerciseDuration = exerciseData.getTotalDuration();
+    final int exerciseCaloriesBurned = exerciseData.getTotalCalories();
+    final int exerciseSessions = exerciseData.getSessionCount();
+
+    final int totalMl = drinkData.totalMlFor(todayKey);
+    final int totalCups = drinkData.totalCupFor(todayKey);
+
+    final double calorieProgress =
+        (totalCalories / calorieGoal).clamp(0.0, 1.0);
+
+    return Scaffold(
+      backgroundColor: scheme.surface,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(scheme, today),
+              Padding(
+                padding: const EdgeInsets.only(top: 28),
+                child: _buildSummaryCard(
+                  scheme,
+                  totalCalories: totalCalories,
+                  exerciseDuration: exerciseDuration,
+                  progress: calorieProgress,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 28),
+                child: _buildQuickActions(context, scheme),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 24),
+                child: _sectionLabel(scheme, 'Exercise'),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Row(
+                  spacing: 14,
+                  children: [
+                    Expanded(
+                      child: _statChip(
+                        scheme,
+                        icon: Icons.local_fire_department_outlined,
+                        label: 'Burned',
+                        value: '${_formatNumber(exerciseCaloriesBurned)} kcal',
+                      ),
+                    ),
+                    Expanded(
+                      child: _statChip(
+                        scheme,
+                        icon: Icons.fitness_center_outlined,
+                        label: 'Sessions',
+                        value: '$exerciseSessions',
+                      ),
+                    ),
+                    Expanded(
+                      child: _statChip(
+                        scheme,
+                        icon: Icons.water_drop_outlined,
+                        label: 'Drinks',
+                        value: '$totalMl ml',
+                        hint: '$totalCups cups',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 24),
+                child: _sectionLabel(scheme, 'Body'),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Row(
+                  spacing: 14,
+                  children: [
+                    Expanded(
+                      child: _statChip(
+                        scheme,
+                        icon: Icons.monitor_weight_outlined,
+                        label: 'Weight',
+                        value: _valueOrDash(healthData.weight, 'kg'),
+                        onTap: () => Navigator.pushNamed(context, '/2'),
+                      ),
+                    ),
+                    Expanded(
+                      child: _statChip(
+                        scheme,
+                        icon: Icons.height_outlined,
+                        label: 'Height',
+                        value: _valueOrDash(healthData.height, 'cm'),
+                        onTap: () => Navigator.pushNamed(context, '/2'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(ColorScheme scheme, DateTime today) {
+    final dateLabel =
+        '${_weekdays[today.weekday - 1]}, ${_months[today.month - 1]} ${today.day}';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 6,
+      children: [
+        Text(
+          dateLabel,
+          style: TextStyle(
+            color: scheme.primary,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        Text(
+          _greetingFor(today.hour),
+          style: TextStyle(
+            color: scheme.onSurface,
+            fontSize: 34,
+            height: 1.1,
+            fontWeight: FontWeight.w700,
+            fontFamily: 'serif',
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _greetingFor(int hour) {
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  Widget _buildSummaryCard(
+    ColorScheme scheme, {
+    required int totalCalories,
+    required int exerciseDuration,
+    required double progress,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Row(
+        spacing: 16,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 20,
+              children: [
+                _buildMetricRow(
+                  scheme,
+                  dotColor: scheme.primary,
+                  label: 'CALORIES',
+                  value: _formatNumber(totalCalories),
+                  suffix: ' / ${_formatNumber(calorieGoal)} kcal',
+                ),
+                _buildMetricRow(
+                  scheme,
+                  dotColor: scheme.tertiary,
+                  label: 'EXERCISE',
+                  value: '$exerciseDuration',
+                  suffix: ' / $exerciseGoalMinutes min',
+                ),
+              ],
+            ),
+          ),
+          _buildProgressRing(scheme, progress),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricRow(
+    ColorScheme scheme, {
+    required Color dotColor,
+    required String label,
+    required String value,
+    required String suffix,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 12,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+          ),
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: scheme.onSurfaceVariant,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: RichText(
+                text: TextSpan(
+                  text: value,
+                  style: TextStyle(
+                    color: scheme.onSurface,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: suffix,
+                      style: TextStyle(
+                        color: scheme.onSurfaceVariant,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProgressRing(ColorScheme scheme, double progress) {
+    return SizedBox(
+      width: 130,
+      height: 130,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox(
+            width: 130,
+            height: 130,
+            child: CircularProgressIndicator(
+              value: progress,
+              strokeWidth: 10,
+              strokeCap: StrokeCap.round,
+              backgroundColor: scheme.primary.withValues(alpha: 0.15),
+              valueColor: AlwaysStoppedAnimation(scheme.primary),
+            ),
+          ),
+          Text(
+            '${(progress * 100).round()}%',
+            style: TextStyle(
+              color: scheme.primary,
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActions(BuildContext context, ColorScheme scheme) {
+    return Row(
+      spacing: 14,
+      children: [
+        Expanded(
+          child: _actionCard(
+            context,
+            route: '/1',
+            label: 'Meals',
+            icon: Icons.restaurant_outlined,
+            background: scheme.primaryContainer,
+            iconColor: scheme.onPrimaryContainer,
+          ),
+        ),
+        Expanded(
+          child: _actionCard(
+            context,
+            route: '/4',
+            label: 'Water',
+            icon: Icons.water_drop_outlined,
+            background: scheme.tertiaryContainer,
+            iconColor: scheme.onTertiaryContainer,
+          ),
+        ),
+        Expanded(
+          child: _actionCard(
+            context,
+            route: '/3',
+            label: 'Exercise',
+            icon: Icons.monitor_heart_outlined,
+            background: scheme.secondaryContainer,
+            iconColor: scheme.onSecondaryContainer,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _actionCard(
+    BuildContext context, {
+    required String route,
+    required String label,
+    required IconData icon,
+    required Color background,
+    required Color iconColor,
+  }) {
+    return Material(
+      color: background,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => Navigator.pushNamed(context, route),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 36,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, color: iconColor, size: 26),
+                  const Spacer(),
+                  Icon(Icons.add,
+                      color: iconColor.withValues(alpha: 0.6), size: 20),
+                ],
+              ),
+              Text(
+                label,
+                style: TextStyle(
+                  color: iconColor,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionLabel(ColorScheme scheme, String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        color: scheme.onSurface,
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+      ),
+    );
+  }
+
+  Widget _statChip(
+    ColorScheme scheme, {
+    required IconData icon,
+    required String label,
+    required String value,
+    String? hint,
+    VoidCallback? onTap,
+  }) {
+    final content = Padding(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: scheme.primary, size: 22),
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: scheme.onSurfaceVariant,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              value,
+              style: TextStyle(
+                color: scheme.onSurface,
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          if (hint != null)
+            Text(
+              hint,
+              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 11),
+            ),
+        ],
+      ),
+    );
+
+    return Material(
+      color: scheme.surfaceContainerHigh,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: scheme.outlineVariant),
+      ),
+      child: onTap == null
+          ? content
+          : InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: onTap,
+              child: content,
+            ),
+    );
+  }
+
+  String _valueOrDash(String raw, String unit) {
+    if (raw.trim().isEmpty) return '- $unit';
+    return '$raw $unit';
+  }
+
+  String _formatNumber(int value) {
+    final s = value.toString();
+    final buffer = StringBuffer();
+    for (int i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buffer.write(',');
+      buffer.write(s[i]);
+    }
+    return buffer.toString();
+  }
+}
