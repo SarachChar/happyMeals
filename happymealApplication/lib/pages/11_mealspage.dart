@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:happymeal_application/controllers/meal_controller.dart';
 import 'package:happymeal_application/models/meal_data_model.dart';
 import 'package:happymeal_application/models/meals_model.dart';
 import 'package:happymeal_application/models/meals_summary_model.dart';
+import 'package:happymeal_application/services/meal_service.dart';
 import 'package:provider/provider.dart';
 
 class MealsPage extends StatelessWidget {
@@ -134,6 +136,8 @@ class _AddMealPageState extends State<AddMealPage> {
   final _mealFormKey = GlobalKey<FormState>();
   final _foodFormKey = GlobalKey<FormState>();
 
+  final MealController _mealController = MealController(MealFirebaseService());
+
   String? _mealName;
 
   String? _foodName;
@@ -215,7 +219,7 @@ class _AddMealPageState extends State<AddMealPage> {
     _foodFatController.clear();
   }
 
-  void _saveMeal() {
+  void _saveMeal() async {
     if (!_mealFormKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Input is invalid')),
@@ -230,12 +234,23 @@ class _AddMealPageState extends State<AddMealPage> {
     }
     _mealFormKey.currentState!.save();
 
-    final mealsModel = context.read<MealsModel>();
-    mealsModel.addMeal(Meal(
+    final meal = Meal(
       mealName: _mealName!,
       createdAt: DateTime.now(),
       foods: List<Food>.from(_foods),
-    ));
+    );
+
+    final mealsModel = context.read<MealsModel>();
+    mealsModel.addMeal(meal);
+
+    try {
+      await _mealController.addMeal(meal);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to upload meal: $e')),
+      );
+    }
 
     int items = 0;
     int cal = 0;
@@ -252,6 +267,7 @@ class _AddMealPageState extends State<AddMealPage> {
       }
     }
 
+    if (!mounted) return;
     final summary = context.read<MealsSummaryModel>();
     summary.totalMeals = mealsModel.meals.length;
     summary.totalFoodItems = items;

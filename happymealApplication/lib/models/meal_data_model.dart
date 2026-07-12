@@ -15,6 +15,17 @@ class Food {
   final int carb;
   final int fat;
   final String imageUrl;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'kcal': kcal,
+      'protein': protein,
+      'carb': carb,
+      'fat': fat,
+      'imageUrl': imageUrl,
+    };
+  }
 }
 
 class Meal {
@@ -27,4 +38,12 @@ class Meal {
   final String mealName;
   final DateTime createdAt;
   final List<Food> foods;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'mealName': mealName,
+      'createdAt': createdAt.toIso8601String(),
+      'foods': foods.map((food) => food.toMap()).toList(),
+    };
+  }
 }
