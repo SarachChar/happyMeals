@@ -12,6 +12,7 @@ import 'package:happymeal_application/pages/05_exercisepage.dart';
 import 'package:happymeal_application/pages/06_add_exercise_page.dart';
 import 'package:happymeal_application/pages/08_drinkpage.dart';
 import 'package:happymeal_application/pages/11_mealspage.dart';
+import 'package:happymeal_application/pages/88_example_postpage.dart';
 import 'package:happymeal_application/pages/homePage.dart';
 // import 'package:happymeal_application/pages/99_blankpage.dart';
 import 'package:provider/provider.dart';
@@ -55,6 +56,7 @@ class MyApp extends StatelessWidget {
         '/4': (context) => DrinkPage(),
         '/addexercise': (context) => AddExercisePage(),
         '/home':(context) => HomePage(),
+        '/postexample':(context) => PostPage(),
       },
     );
   }

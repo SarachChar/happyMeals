@@ -50,19 +50,19 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyD1QD1rq97eJUDmnHMdT31iZeUp_aAFZO4',
-    appId: '1:235221398188:web:503ee53ad4502f55c76509',
-    messagingSenderId: '235221398188',
-    projectId: 'is767-2025-3-b4182',
-    authDomain: 'is767-2025-3-b4182.firebaseapp.com',
-    storageBucket: 'is767-2025-3-b4182.firebasestorage.app',
+    apiKey: 'AIzaSyBtgjoulaftILLMYRIEBIll9Ba0EKhmCKk',
+    appId: '1:218386116216:web:391d70a37403447e67078d',
+    messagingSenderId: '218386116216',
+    projectId: 'is767-2025-3-pong',
+    authDomain: 'is767-2025-3-pong.firebaseapp.com',
+    storageBucket: 'is767-2025-3-pong.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDQ8EhiIJ9dyEEGzDuE-iepMBF_Gy7CaNM',
-    appId: '1:235221398188:android:ef4a8aebdb044c00c76509',
-    messagingSenderId: '235221398188',
-    projectId: 'is767-2025-3-b4182',
-    storageBucket: 'is767-2025-3-b4182.firebasestorage.app',
+    apiKey: 'AIzaSyAoUyp4uP-MiyUlBwyRNpxdy1y8gj31jig',
+    appId: '1:218386116216:android:9e1c19032c8f88dd67078d',
+    messagingSenderId: '218386116216',
+    projectId: 'is767-2025-3-pong',
+    storageBucket: 'is767-2025-3-pong.firebasestorage.app',
   );
 }
