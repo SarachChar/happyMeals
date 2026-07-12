@@ -335,7 +335,7 @@ class HomePage extends StatelessWidget {
           child: _actionCard(
             context,
             route: '/4',
-            label: 'Water',
+            label: 'Drinks',
             icon: Icons.water_drop_outlined,
             background: scheme.tertiaryContainer,
             iconColor: scheme.onTertiaryContainer,
