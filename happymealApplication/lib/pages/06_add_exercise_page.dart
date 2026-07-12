@@ -26,7 +26,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
 
   final Map<String, double> _caloriesPerMinute = {
     'Running': 10,
-    'Walking': 4,
+    'Walking': 5,
     'Cycling': 8,
     'Swimming': 9,
     'Weight Training': 6,
