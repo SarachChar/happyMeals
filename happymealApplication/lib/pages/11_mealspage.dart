@@ -1,12 +1,93 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:happymeal_application/controllers/meal_controller.dart';
 import 'package:happymeal_application/models/meal_data_model.dart';
 import 'package:happymeal_application/models/meals_model.dart';
 import 'package:happymeal_application/models/meals_summary_model.dart';
+import 'package:happymeal_application/services/meal_service.dart';
 import 'package:provider/provider.dart';
 
-class MealsPage extends StatelessWidget {
+class MealsPage extends StatefulWidget {
   const MealsPage({super.key});
+
+  @override
+  State<MealsPage> createState() => _MealsPageState();
+}
+
+class _MealsPageState extends State<MealsPage> {
   final int _recommendedCalories = 2200;
+  final MealController _mealController = MealController(MealFirebaseService());
+
+  bool _isLoading = false;
+  StreamSubscription<bool>? _syncSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncSub = _mealController.onSync.listen((bool syncState) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = syncState;
+      });
+    });
+    _loadMeals();
+  }
+
+  @override
+  void dispose() {
+    _syncSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadMeals() async {
+    final mealsModel = context.read<MealsModel>();
+    if (mealsModel.meals.isNotEmpty) return;
+    try {
+      final meals = await _mealController.fetchMealsByDate(DateTime.now());
+      if (!mounted) return;
+      mealsModel.setMeals(meals);
+      _recalculateSummary(mealsModel, context.read<MealsSummaryModel>());
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load meals: $e')),
+      );
+    }
+  }
+
+  Future<void> _deleteMeal(Meal meal) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Meal'),
+        content: Text('Delete "${meal.mealName}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final mealsModel = context.read<MealsModel>();
+    mealsModel.removeMeal(meal);
+    _recalculateSummary(mealsModel, context.read<MealsSummaryModel>());
+
+    try {
+      await _mealController.updateMeal(meal);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete meal: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -103,19 +184,28 @@ class MealsPage extends StatelessWidget {
               ),
             ),
           ),
-          if (mealsModel.meals.isNotEmpty) 
+          if (_isLoading)
+            const Expanded(
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (mealsModel.meals.isNotEmpty)
             Expanded(
               child: ListView.builder(
                 itemCount: mealsModel.meals.length,
                 itemBuilder: (context, index) {
                   final meal = mealsModel.meals[index];
-                  return MealsCard(data: meal);
+                  return MealsCard(
+                    data: meal,
+                    onDelete: () => _deleteMeal(meal),
+                  );
                 },
               ),
-            ),
-          if (mealsModel.meals.isEmpty) 
-            Center(
-              child: Text('No meals yet. Add your first meal!')
+            )
+          else
+            const Expanded(
+              child: Center(
+                child: Text('No meals yet. Add your first meal!'),
+              ),
             )
         ],
       ),
@@ -133,6 +223,8 @@ class AddMealPage extends StatefulWidget {
 class _AddMealPageState extends State<AddMealPage> {
   final _mealFormKey = GlobalKey<FormState>();
   final _foodFormKey = GlobalKey<FormState>();
+
+  final MealController _mealController = MealController(MealFirebaseService());
 
   String? _mealName;
 
@@ -215,7 +307,7 @@ class _AddMealPageState extends State<AddMealPage> {
     _foodFatController.clear();
   }
 
-  void _saveMeal() {
+  void _saveMeal() async {
     if (!_mealFormKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Input is invalid')),
@@ -230,35 +322,26 @@ class _AddMealPageState extends State<AddMealPage> {
     }
     _mealFormKey.currentState!.save();
 
-    final mealsModel = context.read<MealsModel>();
-    mealsModel.addMeal(Meal(
+    final meal = Meal(
       mealName: _mealName!,
       createdAt: DateTime.now(),
       foods: List<Food>.from(_foods),
-    ));
+    );
 
-    int items = 0;
-    int cal = 0;
-    int carb = 0;
-    int protein = 0;
-    int fat = 0;
-    for (final m in mealsModel.meals) {
-      items += m.foods.length;
-      for (final f in m.foods) {
-        cal += f.kcal;
-        carb += f.carb;
-        protein += f.protein;
-        fat += f.fat;
-      }
+    final mealsModel = context.read<MealsModel>();
+    mealsModel.addMeal(meal);
+
+    try {
+      await _mealController.addMeal(meal);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to upload meal: $e')),
+      );
     }
 
-    final summary = context.read<MealsSummaryModel>();
-    summary.totalMeals = mealsModel.meals.length;
-    summary.totalFoodItems = items;
-    summary.totalCalories = cal;
-    summary.totalCarb = carb;
-    summary.totalProtein = protein;
-    summary.totalFat = fat;
+    if (!mounted) return;
+    _recalculateSummary(mealsModel, context.read<MealsSummaryModel>());
 
     Navigator.pop(context);
   }
@@ -628,10 +711,12 @@ class SelectFoodCard extends StatelessWidget {
 class MealsCard extends StatelessWidget {
   const MealsCard({
     super.key,
-    required this.data
+    required this.data,
+    this.onDelete,
   });
 
   final Meal data;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -668,6 +753,25 @@ class MealsCard extends StatelessWidget {
                   height: 1.0,
                 ),
               ),
+              const Spacer(),
+              // Text(
+              //   '${data.createdAt.day.toString().padLeft(2, '0')}/'
+              //   '${data.createdAt.month.toString().padLeft(2, '0')}/'
+              //   '${data.createdAt.year}',
+              //   style: const TextStyle(
+              //     color: Color.fromARGB(255, 101, 101, 101),
+              //     fontSize: 20.0,
+              //     fontWeight: FontWeight.w400,
+              //     height: 1.0,
+              //   ),
+              // ),
+              if (onDelete != null)
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  color: const Color.fromARGB(255, 101, 101, 101),
+                  tooltip: 'Delete',
+                  onPressed: onDelete,
+                ),
             ],
           ),
           ...data.foods.map(
@@ -805,4 +909,27 @@ class NutritionBox extends StatelessWidget {
       ),
     );
   }
+}
+
+void _recalculateSummary(MealsModel mealsModel, MealsSummaryModel summary) {
+  int items = 0;
+  int cal = 0;
+  int carb = 0;
+  int protein = 0;
+  int fat = 0;
+  for (final m in mealsModel.meals) {
+    items += m.foods.length;
+    for (final f in m.foods) {
+      cal += f.kcal;
+      carb += f.carb;
+      protein += f.protein;
+      fat += f.fat;
+    }
+  }
+  summary.totalMeals = mealsModel.meals.length;
+  summary.totalFoodItems = items;
+  summary.totalCalories = cal;
+  summary.totalCarb = carb;
+  summary.totalProtein = protein;
+  summary.totalFat = fat;
 }

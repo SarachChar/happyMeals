@@ -1,4 +1,4 @@
-// --------------------- data models
+
 class Food {
   const Food({
     required this.name,
@@ -15,6 +15,28 @@ class Food {
   final int carb;
   final int fat;
   final String imageUrl;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'kcal': kcal,
+      'protein': protein,
+      'carb': carb,
+      'fat': fat,
+      'imageUrl': imageUrl,
+    };
+  }
+
+  factory Food.fromMap(Map<String, dynamic> map) {
+    return Food(
+      name: map['name'] as String,
+      kcal: map['kcal'] as int? ?? 0,
+      protein: map['protein'] as int? ?? 0,
+      carb: map['carb'] as int? ?? 0,
+      fat: map['fat'] as int? ?? 0,
+      imageUrl: map['imageUrl'] as String? ?? '',
+    );
+  }
 }
 
 class Meal {
@@ -22,9 +44,31 @@ class Meal {
     required this.mealName,
     required this.createdAt,
     required this.foods,
+    this.isDelete = false,
   });
 
   final String mealName;
   final DateTime createdAt;
   final List<Food> foods;
+  final bool isDelete;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'mealName': mealName,
+      'createdAt': createdAt.toIso8601String(),
+      'foods': foods.map((food) => food.toMap()).toList(),
+      'isDelete': isDelete,
+    };
+  }
+
+  factory Meal.fromSnapshot(Map<String, dynamic> snapshot) {
+    return Meal(
+      mealName: snapshot['mealName'] as String? ?? '',
+      createdAt: DateTime.parse(snapshot['createdAt'] as String),
+      foods: (snapshot['foods'] as List? ?? [])
+          .map((food) => Food.fromMap(food as Map<String, dynamic>))
+          .toList(),
+      isDelete: snapshot['isDelete'] as bool? ?? false,
+    );
+  }
 }
