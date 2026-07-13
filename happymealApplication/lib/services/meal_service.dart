@@ -5,6 +5,7 @@ abstract class MealService {
   Future<void> addMeal(Meal meal);
   Future<List<Meal>> getMeals();
   Future<List<Meal>> getMealsByDate(DateTime date);
+  Future<void> updateMeal(Meal meal);
 }
 
 String mealDocId(DateTime dt) {
@@ -18,10 +19,7 @@ String mealDocId(DateTime dt) {
 class MealFirebaseService implements MealService {
   @override
   Future<void> addMeal(Meal meal) async {
-    await FirebaseFirestore.instance
-        .collection('meals')
-        .doc(mealDocId(meal.createdAt))
-        .set({
+    await FirebaseFirestore.instance.collection('meals').doc(mealDocId(meal.createdAt)).set({
       ...meal.toMap(),
       'timestamp': FieldValue.serverTimestamp(),
     });
@@ -30,8 +28,8 @@ class MealFirebaseService implements MealService {
   @override
   Future<List<Meal>> getMeals() async {
     final qs = await FirebaseFirestore.instance.collection('meals').get();
-    return qs.docs
-        .map((doc) => Meal.fromSnapshot(doc.data()))
+    return qs.docs.map((doc) => Meal.fromSnapshot(doc.data()))
+        .where((meal) => !meal.isDelete)
         .toList();
   }
 
@@ -39,14 +37,20 @@ class MealFirebaseService implements MealService {
   Future<List<Meal>> getMealsByDate(DateTime date) async {
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
-    final qs = await FirebaseFirestore.instance
-        .collection('meals')
-        .where('createdAt',
-            isGreaterThanOrEqualTo: start.toIso8601String())
+    final qs = await FirebaseFirestore.instance.collection('meals')
+        .where('createdAt', isGreaterThanOrEqualTo: start.toIso8601String())
         .where('createdAt', isLessThan: end.toIso8601String())
         .get();
-    return qs.docs
-        .map((doc) => Meal.fromSnapshot(doc.data()))
+    return qs.docs.map((doc) => Meal.fromSnapshot(doc.data()))
+        .where((meal) => !meal.isDelete)
         .toList();
+  }
+
+  @override
+  Future<void> updateMeal(Meal meal) async {
+    await FirebaseFirestore.instance.collection('meals').doc(mealDocId(meal.createdAt))
+        .update({
+          'isDelete': true
+        });
   }
 }

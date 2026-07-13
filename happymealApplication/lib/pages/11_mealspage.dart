@@ -7,29 +7,6 @@ import 'package:happymeal_application/models/meals_summary_model.dart';
 import 'package:happymeal_application/services/meal_service.dart';
 import 'package:provider/provider.dart';
 
-void _recalculateSummary(MealsModel mealsModel, MealsSummaryModel summary) {
-  int items = 0;
-  int cal = 0;
-  int carb = 0;
-  int protein = 0;
-  int fat = 0;
-  for (final m in mealsModel.meals) {
-    items += m.foods.length;
-    for (final f in m.foods) {
-      cal += f.kcal;
-      carb += f.carb;
-      protein += f.protein;
-      fat += f.fat;
-    }
-  }
-  summary.totalMeals = mealsModel.meals.length;
-  summary.totalFoodItems = items;
-  summary.totalCalories = cal;
-  summary.totalCarb = carb;
-  summary.totalProtein = protein;
-  summary.totalFat = fat;
-}
-
 class MealsPage extends StatefulWidget {
   const MealsPage({super.key});
 
@@ -66,7 +43,7 @@ class _MealsPageState extends State<MealsPage> {
     final mealsModel = context.read<MealsModel>();
     if (mealsModel.meals.isNotEmpty) return;
     try {
-      final meals = await _mealController.fetchTodayMeals();
+      final meals = await _mealController.fetchMealsByDate(DateTime.now());
       if (!mounted) return;
       mealsModel.setMeals(meals);
       _recalculateSummary(mealsModel, context.read<MealsSummaryModel>());
@@ -74,6 +51,40 @@ class _MealsPageState extends State<MealsPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to load meals: $e')),
+      );
+    }
+  }
+
+  Future<void> _deleteMeal(Meal meal) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Meal'),
+        content: Text('Delete "${meal.mealName}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final mealsModel = context.read<MealsModel>();
+    mealsModel.removeMeal(meal);
+    _recalculateSummary(mealsModel, context.read<MealsSummaryModel>());
+
+    try {
+      await _mealController.updateMeal(meal);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete meal: $e')),
       );
     }
   }
@@ -183,7 +194,10 @@ class _MealsPageState extends State<MealsPage> {
                 itemCount: mealsModel.meals.length,
                 itemBuilder: (context, index) {
                   final meal = mealsModel.meals[index];
-                  return MealsCard(data: meal);
+                  return MealsCard(
+                    data: meal,
+                    onDelete: () => _deleteMeal(meal),
+                  );
                 },
               ),
             )
@@ -697,10 +711,12 @@ class SelectFoodCard extends StatelessWidget {
 class MealsCard extends StatelessWidget {
   const MealsCard({
     super.key,
-    required this.data
+    required this.data,
+    this.onDelete,
   });
 
   final Meal data;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -738,18 +754,24 @@ class MealsCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              Text(
-                '${data.createdAt.day.toString().padLeft(2, '0')}/'
-                '${data.createdAt.month.toString().padLeft(2, '0')}/'
-                '${data.createdAt.year}',
-                style: const TextStyle(
-                  color: Color.fromARGB(255, 101, 101, 101),
-                  fontSize: 20.0,
-                  fontWeight: FontWeight.w400,
-                  height: 1.0,
+              // Text(
+              //   '${data.createdAt.day.toString().padLeft(2, '0')}/'
+              //   '${data.createdAt.month.toString().padLeft(2, '0')}/'
+              //   '${data.createdAt.year}',
+              //   style: const TextStyle(
+              //     color: Color.fromARGB(255, 101, 101, 101),
+              //     fontSize: 20.0,
+              //     fontWeight: FontWeight.w400,
+              //     height: 1.0,
+              //   ),
+              // ),
+              if (onDelete != null)
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  color: const Color.fromARGB(255, 101, 101, 101),
+                  tooltip: 'Delete',
+                  onPressed: onDelete,
                 ),
-              ),
-                
             ],
           ),
           ...data.foods.map(
@@ -887,4 +909,27 @@ class NutritionBox extends StatelessWidget {
       ),
     );
   }
+}
+
+void _recalculateSummary(MealsModel mealsModel, MealsSummaryModel summary) {
+  int items = 0;
+  int cal = 0;
+  int carb = 0;
+  int protein = 0;
+  int fat = 0;
+  for (final m in mealsModel.meals) {
+    items += m.foods.length;
+    for (final f in m.foods) {
+      cal += f.kcal;
+      carb += f.carb;
+      protein += f.protein;
+      fat += f.fat;
+    }
+  }
+  summary.totalMeals = mealsModel.meals.length;
+  summary.totalFoodItems = items;
+  summary.totalCalories = cal;
+  summary.totalCarb = carb;
+  summary.totalProtein = protein;
+  summary.totalFat = fat;
 }

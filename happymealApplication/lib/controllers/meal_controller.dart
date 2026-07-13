@@ -30,5 +30,9 @@ class MealController {
     return meals;
   }
 
-  Future<List<Meal>> fetchTodayMeals() => fetchMealsByDate(DateTime.now());
+  Future<void> updateMeal(Meal meal) async {
+    onSyncController.add(true);
+    await service.updateMeal(meal);
+    onSyncController.add(false);
+  }
 }

@@ -17,4 +17,9 @@ class MealsModel extends ChangeNotifier {
       ..addAll(meals);
     notifyListeners();
   }
+
+  void removeMeal(Meal meal) {
+    _meals.remove(meal);
+    notifyListeners();
+  }
 }
