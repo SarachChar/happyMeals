@@ -15,4 +15,20 @@ class MealController {
     await service.addMeal(meal);
     onSyncController.add(false);
   }
+
+  Future<List<Meal>> fetchMeals() async {
+    onSyncController.add(true);
+    final meals = await service.getMeals();
+    onSyncController.add(false);
+    return meals;
+  }
+
+  Future<List<Meal>> fetchMealsByDate(DateTime date) async {
+    onSyncController.add(true);
+    final meals = await service.getMealsByDate(date);
+    onSyncController.add(false);
+    return meals;
+  }
+
+  Future<List<Meal>> fetchTodayMeals() => fetchMealsByDate(DateTime.now());
 }

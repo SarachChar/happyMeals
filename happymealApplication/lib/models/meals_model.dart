@@ -10,4 +10,11 @@ class MealsModel extends ChangeNotifier {
     _meals.add(meal);
     notifyListeners();
   }
+
+  void setMeals(List<Meal> meals) {
+    _meals
+      ..clear()
+      ..addAll(meals);
+    notifyListeners();
+  }
 }

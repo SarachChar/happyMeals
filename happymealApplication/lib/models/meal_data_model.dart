@@ -1,4 +1,4 @@
-// --------------------- data models
+
 class Food {
   const Food({
     required this.name,
@@ -26,6 +26,17 @@ class Food {
       'imageUrl': imageUrl,
     };
   }
+
+  factory Food.fromMap(Map<String, dynamic> map) {
+    return Food(
+      name: map['name'] as String,
+      kcal: map['kcal'] as int? ?? 0,
+      protein: map['protein'] as int? ?? 0,
+      carb: map['carb'] as int? ?? 0,
+      fat: map['fat'] as int? ?? 0,
+      imageUrl: map['imageUrl'] as String? ?? '',
+    );
+  }
 }
 
 class Meal {
@@ -45,5 +56,15 @@ class Meal {
       'createdAt': createdAt.toIso8601String(),
       'foods': foods.map((food) => food.toMap()).toList(),
     };
+  }
+
+  factory Meal.fromSnapshot(Map<String, dynamic> snapshot) {
+    return Meal(
+      mealName: snapshot['mealName'] as String? ?? '',
+      createdAt: DateTime.parse(snapshot['createdAt'] as String),
+      foods: (snapshot['foods'] as List? ?? [])
+          .map((food) => Food.fromMap(food as Map<String, dynamic>))
+          .toList(),
+    );
   }
 }
