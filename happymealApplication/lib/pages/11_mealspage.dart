@@ -294,7 +294,7 @@ class _AddMealPageState extends State<AddMealPage> {
         protein: _foodProtein!,
         carb: _foodCarb!,
         fat: _foodFat!,
-        imageUrl: _foodImageUrl!,
+        imageUrl: _foodImageUrl ?? '',
       ));
     });
 
@@ -453,13 +453,10 @@ class _AddMealPageState extends State<AddMealPage> {
                       controller: _foodImageUrlController,
                       decoration: InputDecoration(
                         border: OutlineInputBorder(),
-                        labelText: 'Image URL',
+                        labelText: 'Image URL (optional)',
                       ),
                       onSaved: (value) {
                         _foodImageUrl = value;
-                      },
-                      validator: (value) {
-                        return _validateTextField('Image URL', value);
                       },
                     ),
                   ),
@@ -643,10 +640,7 @@ class SelectFoodCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Image.network(
-            data.imageUrl,
-            width: 140.0,
-          ),
+          FoodImage(imageUrl: data.imageUrl),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
@@ -803,10 +797,7 @@ class FoodCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Image.network(
-            data.imageUrl,
-            width: 140.0,
-          ),
+          FoodImage(imageUrl: data.imageUrl),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
@@ -833,7 +824,7 @@ class FoodCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  
+
                   Text(
                     'Protein: ${data.protein}g',
                     style: const TextStyle(
@@ -858,6 +849,33 @@ class FoodCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class FoodImage extends StatelessWidget {
+  const FoodImage({
+    super.key,
+    required this.imageUrl,
+    this.width = 140.0,
+  });
+
+  final String imageUrl;
+  final double width;
+
+  static const String _fallbackAsset = 'assets/images/meal-icon.png';
+
+  @override
+  Widget build(BuildContext context) {
+    if (imageUrl.isEmpty) {
+      return Image.asset(_fallbackAsset, width: width);
+    }
+    return Image.network(
+      imageUrl,
+      width: width,
+      errorBuilder: (context, error, stackTrace) {
+        return Image.asset(_fallbackAsset, width: width);
+      },
     );
   }
 }
