@@ -31,4 +31,11 @@ class ExerciseModel extends ChangeNotifier {
     _entries.insert(0, entry);
     notifyListeners();
   }
+
+  void setEntries(List<ExerciseLogEntry> entries) {
+    _entries
+      ..clear()
+      ..addAll(entries);
+    notifyListeners();
+  }
 }

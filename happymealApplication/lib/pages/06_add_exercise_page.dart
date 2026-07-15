@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:happymeal_application/components/choicecard.dart';
 import 'package:happymeal_application/components/exercise_log.dart';
@@ -26,7 +25,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
 
   final Map<String, double> _caloriesPerMinute = {
     'Running': 10,
-    'Walking': 5,
+    'Walking': 3,
     'Cycling': 8,
     'Swimming': 9,
     'Weight Training': 6,
@@ -39,7 +38,6 @@ class _AddExercisePageState extends State<AddExercisePage> {
   String _selectedIntensity = 'Moderate';
 
   final TextEditingController _durationController = TextEditingController();
-  DateTime _selectedDateTime = DateTime.now();
 
   int _saveDuration = 0;
 
@@ -53,27 +51,6 @@ class _AddExercisePageState extends State<AddExercisePage> {
       int result = (duration * caloriesPerMinute).round();
       return result;
     }
-
-  Future<void> _pickTime() async {
-    await showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return SizedBox(
-          height: 250,
-          child: CupertinoDatePicker(
-            mode: CupertinoDatePickerMode.time,
-            initialDateTime: _selectedDateTime,
-            onDateTimeChanged: (dateTime) {
-              setState(() {
-                _selectedDateTime = dateTime;
-              });
-            },
-          ),
-        );
-      },
-    );
-  }
-
 
   Future<void> _goToChooseExerciseType() async {
     final List<dynamic> typeList = [];
@@ -106,9 +83,10 @@ class _AddExercisePageState extends State<AddExercisePage> {
       selectedIcon = Icons.fitness_center;
     }
 
+    final now = DateTime.now();
     final newEntry = ExerciseLogEntry(
       time:
-          '${_selectedDateTime.hour.toString().padLeft(2, '0')}:${_selectedDateTime.minute.toString().padLeft(2, '0')}',
+          '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}',
       type: _selectedType,
       intensity: _selectedIntensity,
       durationMinutes: _saveDuration,
@@ -205,24 +183,16 @@ class _AddExercisePageState extends State<AddExercisePage> {
 
               const Text('Time', style: TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
-              InkWell(
-                onTap: _pickTime,
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 254, 254, 254),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(
-                        '${_selectedDateTime.hour.toString().padLeft(2, '0')}:'
-                        '${_selectedDateTime.minute.toString().padLeft(2, '0')}',
-                      ),
-                    ],
-                  ),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(255, 254, 254, 254),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${DateTime.now().hour.toString().padLeft(2, '0')}:'
+                  '${DateTime.now().minute.toString().padLeft(2, '0')}',
                 ),
               ),
               const SizedBox(height: 20),

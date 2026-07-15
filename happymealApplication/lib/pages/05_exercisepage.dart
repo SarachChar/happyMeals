@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:happymeal_application/components/exercise_log.dart';
+import 'package:happymeal_application/controllers/exercise_controller.dart';
 import 'package:happymeal_application/models/exercise_model.dart';
+import 'package:happymeal_application/services/exercise_service.dart';
 import 'package:provider/provider.dart';
 
 class ExercisePage extends StatefulWidget {
@@ -11,11 +13,34 @@ class ExercisePage extends StatefulWidget {
 }
 
 class _ExercisePageState extends State<ExercisePage> {
+  final ExerciseController controller =
+      ExerciseController(ExerciseFirebaseService());
+  bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    controller.onSync.listen((bool syncState) {
+      if (!mounted) return;
+      setState(() {
+        isLoading = syncState;
+      });
+    });
+    _fetchExercises();
+  }
+
+  Future<void> _fetchExercises() async {
+    final entries = await controller.fetchExercises();
+    if (!mounted) return;
+    context.read<ExerciseModel>().setEntries(entries);
+  }
 
   Future<void> _goToAddExercisePage() async {
     final result = await Navigator.pushNamed(context, '/addexercise');
     if (result is ExerciseLogEntry) {
-      context.read<ExerciseModel>().addEntry(result);
+      final savedEntry = await controller.addExercise(result);
+      if (!mounted) return;
+      context.read<ExerciseModel>().addEntry(savedEntry);
     }
   }
 
@@ -32,25 +57,27 @@ class _ExercisePageState extends State<ExercisePage> {
           ),
         ],
       ),
-      body: Consumer<ExerciseModel>(
-        builder: (context, model, child) {
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: _buildSummaryCard(
-                  context,
-                  model.getTotalCalories(),
-                  model.getTotalDuration(),
-                ),
-              ),
-              Expanded(
-                child: _buildExerciseLog(context, model.entries),
-              ),
-            ],
-          );
-        },
-      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Consumer<ExerciseModel>(
+              builder: (context, model, child) {
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: _buildSummaryCard(
+                        context,
+                        model.getTotalCalories(),
+                        model.getTotalDuration(),
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildExerciseLog(context, model.entries),
+                    ),
+                  ],
+                );
+              },
+            ),
     );
   }
 
