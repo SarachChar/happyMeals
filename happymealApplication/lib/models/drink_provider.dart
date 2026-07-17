@@ -1,41 +1,49 @@
 import 'package:flutter/material.dart';
+import 'package:happymeal_application/models/drink_model.dart';
 
+/// Pure data/state holder for drinks — mirrors ExerciseModel's role.
+/// Fetching/adding/deleting now happens via DrinkController directly in
+/// DrinkPage; this class no longer owns a controller.
 class DrinkProvider extends ChangeNotifier {
   DateTime? _selectedDate;
-  final List<Map<String, dynamic>> _drinkHistory = [];
+  List<Drink> _drinks = [];
 
   DateTime? get selectedDate => _selectedDate;
-  List<Map<String, dynamic>> get drinkHistory =>
-      List.unmodifiable(_drinkHistory);
-
+  List<Drink> get drinks => List.unmodifiable(_drinks);
 
   void setDate(DateTime date) {
     _selectedDate = date;
     notifyListeners();
   }
 
-  void addDrink(Map<String, dynamic> drink) {
-    _drinkHistory.add(drink);
+  void setDrinks(List<Drink> drinks) {
+    _drinks = drinks;
     notifyListeners();
   }
 
+  void addDrink(Drink drink) {
+    _drinks.add(drink);
+    notifyListeners();
+  }
+
+  void removeDrink(Drink drink) {
+    _drinks.removeWhere((d) => d.dbId == drink.dbId);
+    notifyListeners();
+  }
 
   String formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
   }
 
-
-  List<Map<String, dynamic>> historyForDate(String dateStr) {
-    return _drinkHistory.where((d) => d['date'] == dateStr).toList();
+  List<Drink> historyForDate(String dateStr) {
+    return _drinks.where((d) => d.date == dateStr).toList();
   }
 
   int totalCupFor(String dateStr) => historyForDate(dateStr).length;
 
-  int totalMlFor(String dateStr) => historyForDate(
-    dateStr,
-  ).fold(0, (sum, d) => sum + ((d['ml'] ?? 0) as num).toInt());
+  int totalMlFor(String dateStr) =>
+      historyForDate(dateStr).fold(0, (sum, d) => sum + d.ml);
 
-  int totalCaloriesFor(String dateStr) => historyForDate(
-    dateStr,
-  ).fold(0, (sum, d) => sum + ((d['calories'] ?? 0) as num).toInt());
+  int totalCaloriesFor(String dateStr) =>
+      historyForDate(dateStr).fold(0, (sum, d) => sum + d.calories);
 }
