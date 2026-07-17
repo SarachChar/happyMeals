@@ -59,14 +59,14 @@ class _WristPageState extends State<WristPage> {
 
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('อัปเดตรอบเอวสำเร็จ = $_wrist CM'),
+                      content: Text('อัปเดตรอบข้อมือชั่วคราวสำเร็จ = $_wrist CM'),
                       duration: const Duration(seconds: 2),
                     ),
                   );
 
                   await Future.delayed(
-                    const Duration(milliseconds: 1500)
-                    );
+                    const Duration(milliseconds: 1000),
+                  );
 
                   if (context.mounted) {
                     Navigator.pop(context);

@@ -59,14 +59,14 @@ class _WeightPageState extends State<WeightPage> {
 
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('อัปเดตน้ำหนักสำเร็จ = $_weight KG'),
+                      content: Text('อัปเดตน้ำหนักชั่วคราวสำเร็จ = $_weight KG'),
                       duration: const Duration(seconds: 2),
                     ),
                   );
 
                   await Future.delayed(
-                    const Duration(milliseconds: 1500)
-                    );
+                    const Duration(milliseconds: 1000),
+                  );
 
                   if (context.mounted) {
                     Navigator.pop(context);

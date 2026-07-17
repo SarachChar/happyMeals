@@ -59,13 +59,13 @@ class _HeightPageState extends State<HeightPage> {
 
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('อัปเดตส่วนสูงสำเร็จ = $_height CM'),
-                      duration: const Duration(seconds: 4),
+                      content: Text('อัปเดตส่วนสูงชั่วคราวสำเร็จ = $_height CM'),
+                      duration: const Duration(seconds: 2),
                     ),
                   );
 
                   await Future.delayed(
-                    const Duration(milliseconds: 1500),
+                    const Duration(milliseconds: 1000),
                   );
 
                   if (context.mounted) {
