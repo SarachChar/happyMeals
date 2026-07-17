@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:happymeal_application/controllers/drink_controller.dart';
+import 'package:happymeal_application/models/drink_model.dart';
+import 'package:happymeal_application/models/drink_provider.dart';
+import 'package:happymeal_application/services/drink_service.dart';
 import '09_choosedrinkpage.dart';
-import '../models/drink_provider.dart';
 
 class DrinkPage extends StatefulWidget {
   const DrinkPage({super.key});
@@ -14,18 +17,76 @@ class _DrinkPageState extends State<DrinkPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
 
+  final DrinkController controller = DrinkController(DrinkFirebaseService());
+  bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    controller.onSync.listen((bool syncState) {
+      if (!mounted) return;
+      setState(() {
+        isLoading = syncState;
+      });
+    });
+    _fetchDrinks();
+  }
+
+  Future<void> _fetchDrinks() async {
+    final drinks = await controller.fetchDrinks();
+    if (!mounted) return;
+    context.read<DrinkProvider>().setDrinks(drinks);
+  }
+
   Future<void> pickDate() async {
-    final provider = context.read<DrinkProvider>();
+    final model = context.read<DrinkProvider>();
 
     DateTime? date = await showDatePicker(
       context: context,
-      initialDate: provider.selectedDate ?? DateTime.now(),
+      initialDate: model.selectedDate ?? DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
     );
 
     if (date != null) {
-      provider.setDate(date);
+      model.setDate(date);
+    }
+  }
+
+  Future<void> _addDrink(String currentDate) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ChooseDrinkPage()),
+    );
+
+    if (result == null) return;
+
+    final newDrink = Drink(
+      drinkName: result['drinkName'] as String,
+      image: result['image'] as String,
+      size: result['size'] as String,
+      sugar: (result['sugar'] as num).toInt(),
+      ml: (result['ml'] as num).toInt(),
+      calories: (result['calories'] as num).toInt(),
+      date: currentDate,
+    );
+
+    final savedDrink = await controller.addDrink(newDrink);
+    if (!mounted) return;
+    context.read<DrinkProvider>().addDrink(savedDrink);
+
+    final int totalCal = context.read<DrinkProvider>().totalCaloriesFor(
+      currentDate,
+    );
+
+    if (totalCal > 500) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("วันนี้คุณดื่มน้ำหวาน/แคลอรี่เยอะแล้วจ้า"),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -37,33 +98,32 @@ class _DrinkPageState extends State<DrinkPage> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<DrinkProvider>();
+    final model = context.watch<DrinkProvider>();
 
-    // ตั้งวันที่เริ่มต้นเป็นวันนี้ ถ้ายังไม่มีการเลือกวันที่ (ครั้งแรกที่เปิดหน้า)
-    if (provider.selectedDate == null) {
+    if (model.selectedDate == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        provider.setDate(DateTime.now());
+        model.setDate(DateTime.now());
       });
     }
 
-    final DateTime selectedDate = provider.selectedDate ?? DateTime.now();
-    final String currentDate = provider.formatDate(selectedDate);
+    final DateTime selectedDate = model.selectedDate ?? DateTime.now();
+    final String currentDate = model.formatDate(selectedDate);
 
     _dateController.text = currentDate;
 
-    final List<Map<String, dynamic>> todayHistory = provider.historyForDate(
-      currentDate,
-    );
-    final int totalCup = provider.totalCupFor(currentDate);
-    final int totalMl = provider.totalMlFor(currentDate);
-    final int totalcalories = provider.totalCaloriesFor(currentDate);
+    final List<Drink> todayHistory = model.historyForDate(currentDate);
+    final int totalCup = model.totalCupFor(currentDate);
+    final int totalMl = model.totalMlFor(currentDate);
+    final int totalcalories = model.totalCaloriesFor(currentDate);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text("Drink Update & History"),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: Form(
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Form(
         key: _formKey,
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -170,7 +230,7 @@ class _DrinkPageState extends State<DrinkPage> {
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(10),
                                     child: Image.asset(
-                                      drink['image'],
+                                      drink.image,
                                       width: 70,
                                       height: 70,
                                       fit: BoxFit.cover,
@@ -189,7 +249,7 @@ class _DrinkPageState extends State<DrinkPage> {
                                             bottom: 6,
                                           ),
                                           child: Text(
-                                            drink['drinkName'],
+                                            drink.drinkName,
                                             style: const TextStyle(
                                               fontSize: 18,
                                               fontWeight: FontWeight.bold,
@@ -201,9 +261,14 @@ class _DrinkPageState extends State<DrinkPage> {
                                           padding: const EdgeInsets.only(
                                             bottom: 4,
                                           ),
-                                          child: Text(
-                                            "Date : ${drink['date']}",
+                                          child: Text("Date : ${drink.date}"),
+                                        ),
+
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            bottom: 4,
                                           ),
+                                          child: Text("Size : ${drink.size}"),
                                         ),
 
                                         Padding(
@@ -211,7 +276,7 @@ class _DrinkPageState extends State<DrinkPage> {
                                             bottom: 4,
                                           ),
                                           child: Text(
-                                            "Size : ${drink['size']}",
+                                            "Sugar : ${drink.sugar}%",
                                           ),
                                         ),
 
@@ -219,18 +284,7 @@ class _DrinkPageState extends State<DrinkPage> {
                                           padding: const EdgeInsets.only(
                                             bottom: 4,
                                           ),
-                                          child: Text(
-                                            "Sugar : ${drink['sugar']}%",
-                                          ),
-                                        ),
-
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                            bottom: 4,
-                                          ),
-                                          child: Text(
-                                            "Volume : ${drink['ml']} ml",
-                                          ),
+                                          child: Text("Volume : ${drink.ml} ml"),
                                         ),
 
                                         Padding(
@@ -238,7 +292,7 @@ class _DrinkPageState extends State<DrinkPage> {
                                             top: 4,
                                           ),
                                           child: Text(
-                                            'Calories: ${drink['calories'] ?? 0} kcal',
+                                            'Calories: ${drink.calories} kcal',
                                             style: const TextStyle(
                                               fontWeight: FontWeight.bold,
                                               color: Colors.orange,
@@ -262,34 +316,14 @@ class _DrinkPageState extends State<DrinkPage> {
 
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
-        onPressed: () async {
-          if (!_formKey.currentState!.validate()) {
-            return;
-          }
-
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const ChooseDrinkPage()),
-          );
-
-          if (result != null) {
-            result['date'] = currentDate;
-
-            provider.addDrink(result);
-
-            final int totalCal = provider.totalCaloriesFor(currentDate);
-
-            if (totalCal > 500) {
-              // ignore: use_build_context_synchronously
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("วันนี้คุณดื่มน้ำหวาน/แคลอรี่เยอะแล้วจ้า"),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-          }
-        },
+        onPressed: isLoading
+            ? null
+            : () async {
+                if (!_formKey.currentState!.validate()) {
+                  return;
+                }
+                await _addDrink(currentDate);
+              },
       ),
     );
   }
