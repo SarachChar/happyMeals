@@ -52,6 +52,7 @@ class _HomePageState extends State<HomePage> {
     final int totalCups = drinkData.totalCupFor(todayKey);
 
     final String userEmail = context.read<LoginModel>().username;
+    final String userId = context.read<LoginModel>().userId;
 
     final double calorieProgress =
         (totalCalories / HomePage.calorieGoal).clamp(0.0, 1.0);
@@ -66,6 +67,7 @@ class _HomePageState extends State<HomePage> {
             children: [
               _buildHeader(scheme, today),
               Text(userEmail),
+              Text(userId),
               Padding(
                 padding: const EdgeInsets.only(top: 28),
                 child: _buildSummaryCard(

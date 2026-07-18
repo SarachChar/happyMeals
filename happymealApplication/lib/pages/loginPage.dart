@@ -27,6 +27,47 @@ class _LoginPageState extends State<LoginPage> {
       return null;
   }
 
+  Future<void> _register() async {
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Input is invalid'),
+        ),
+      );
+      return;
+    }
+
+    _formKey.currentState!.save();
+
+    final loginModel = context.read<LoginModel>();
+
+    var registerMessage = '';
+
+    try {
+      final credential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+            email: _username!,
+            password: _password!,
+          );
+
+      registerMessage =
+          'Account created successfully for ${credential.user?.uid}';
+
+      loginModel.username = _username!;
+      loginModel.userId = credential.user!.uid;
+    } on FirebaseAuthException catch (e) {
+      registerMessage = e.code;
+    }
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(registerMessage),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -114,6 +155,8 @@ class _LoginPageState extends State<LoginPage> {
 
                 _formKey.currentState!.save();
 
+                final loginModel = context.read<LoginModel>();
+
                 var loginMessage = '';
 
                 try {
@@ -122,26 +165,40 @@ class _LoginPageState extends State<LoginPage> {
                       email: _username!,
                       password: _password!,
                     );
-                  
+
                   loginMessage = 'Signed in successfully for ${credential.user?.uid}';
+                  loginModel.username = _username!;
+                  loginModel.userId = credential.user!.uid;
+
                 } on FirebaseAuthException catch (e) {
                   loginMessage = 'Error ${e.message}';
                 }
 
-                FirebaseAuth.instance
-                  .signInWithEmailAndPassword(
-                    email: _username!,
-                    password: _password!,
-                  );
+                if (!mounted) return;
 
-                context.read<LoginModel>().username = _username!;
-                
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(loginMessage),
                   ),
                 );
               },
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+              child: Row(
+                children: [
+                  Expanded(child: Divider()),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: Text('OR'),
+                  ),
+                  Expanded(child: Divider()),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: _register,
+              child: Text('Create an account'),
             ),
           ],
         ),
