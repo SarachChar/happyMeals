@@ -1,9 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:happymeal_application/controllers/health_controller.dart';
+import 'package:happymeal_application/models/health_model.dart';
+import 'package:happymeal_application/services/health_service.dart';
 import 'package:happymeal_application/models/health_provider.dart';
 import 'package:happymeal_application/pages/02_height.dart';
 import 'package:happymeal_application/pages/03_weight.dart';
 import 'package:happymeal_application/pages/04_wrist.dart';
-import 'package:provider/provider.dart';
 
 class HealthPage extends StatefulWidget {
   const HealthPage({super.key});
@@ -14,13 +18,156 @@ class HealthPage extends StatefulWidget {
 
 class _HealthPageState extends State<HealthPage> {
   final List<String> entries = ['Height', 'Weight', 'Wrist', 'BMI'];
+  
+  final HealthController _controller = HealthController(HealthFirebaseService());
+  bool _isLoading = false;
+  StreamSubscription<bool>? _syncSubscription;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<HealthProvider>().fetchHealthData();
+    _syncSubscription = _controller.onSync.listen((bool syncState) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = syncState;
+      });
     });
+    _fetchDataForDate(context.read<HealthProvider>().selectedDate);
+  }
+
+  @override
+  void dispose() {
+    _syncSubscription?.cancel();
+    super.dispose();
+  }
+
+  String formatDate(DateTime date) {
+    return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+  }
+
+  String formatPrettyDate(DateTime date) {
+    const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return '${weekdays[date.weekday - 1]}, ${months[date.month - 1]} ${date.day}';
+  }
+
+  Future<void> _fetchDataForDate(DateTime date) async {
+    try {
+      final results = await _controller.fetchHealthsByDate(date);
+      if (!mounted) return;
+
+      final provider = context.read<HealthProvider>();
+      
+      if (results.isNotEmpty) {
+        final latest = results.last;
+        provider.height = latest.height;
+        provider.weight = latest.weight;
+        provider.wrist = latest.wrist;
+      } else {
+        provider.clear();
+      }
+
+      if (formatDate(date) == formatDate(DateTime.now())) {
+        if (results.isNotEmpty) {
+          final latest = results.last;
+          provider.todayHeight = latest.height;
+          provider.todayWeight = latest.weight;
+          provider.todayWrist = latest.wrist;
+          provider.todayBMI = latest.bmi;
+        } else {
+          provider.todayHeight = '';
+          provider.todayWeight = '';
+          provider.todayWrist = '';
+          provider.todayBMI = 0.0;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching health data: $e');
+    }
+  }
+
+  Future<void> _saveAllData() async {
+    final provider = context.read<HealthProvider>();
+    
+    if (provider.height.isEmpty || provider.weight.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('กรุณากรอกข้อมูลส่วนสูงและน้ำหนักก่อนทำการบันทึกข้อมูลครับ'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    try {
+      double bmiVal = 0.0;
+      try {
+        double h = double.parse(provider.height) / 100;
+        double w = double.parse(provider.weight);
+        bmiVal = w / (h * h);
+      } catch (_) {
+        bmiVal = 0.0;
+      }
+
+      List<Health> existingEntries = await _controller.fetchHealthsByDate(provider.selectedDate);
+      if (existingEntries.isNotEmpty) {
+        for (var entry in existingEntries) {
+          await _controller.updateHealth(entry);
+        }
+      }
+
+      Health newHealth = Health(
+        createdAt: DateTime(
+          provider.selectedDate.year,
+          provider.selectedDate.month,
+          provider.selectedDate.day,
+          DateTime.now().hour,
+          DateTime.now().minute,
+          DateTime.now().second,
+        ),
+        height: provider.height,
+        weight: provider.weight,
+        wrist: provider.wrist,
+        bmi: bmiVal,
+      );
+
+      await _controller.addHealth(newHealth);
+      
+
+      await _fetchDataForDate(provider.selectedDate);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('บันทึกข้อมูลสำเร็จในประวัติวันที่: ${formatPrettyDate(provider.selectedDate)}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('เกิดข้อผิดพลาดในการบันทึกข้อมูล: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final provider = context.read<HealthProvider>();
+    DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: provider.selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+    );
+    if (picked != null) {
+      provider.selectedDate = picked;
+      await _fetchDataForDate(picked);
+    }
   }
 
   IconData getHealthIcon(String title) {
@@ -50,19 +197,6 @@ class _HealthPageState extends State<HealthPage> {
     if (bmi < 25) return 'น้ำหนักเกิน';
     if (bmi < 30) return 'อ้วน';
     return 'อ้วนมาก';
-  }
-
-  Future<void> _selectDate(BuildContext context) async {
-    final provider = context.read<HealthProvider>();
-    DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: provider.selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-    );
-    if (picked != null) {
-      await provider.setSelectedDate(picked);
-    }
   }
 
   @override
@@ -102,7 +236,7 @@ class _HealthPageState extends State<HealthPage> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          provider.formatPrettyDate(provider.selectedDate),
+                          formatPrettyDate(provider.selectedDate),
                           style: TextStyle(color: scheme.onSurface, fontSize: 18, fontWeight: FontWeight.w700),
                         ),
                       ],
@@ -113,7 +247,7 @@ class _HealthPageState extends State<HealthPage> {
               ),
             ),
           ),
-          if (provider.isLoading)
+          if (_isLoading)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8.0),
               child: LinearProgressIndicator(),
@@ -221,38 +355,7 @@ class _HealthPageState extends State<HealthPage> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   elevation: 2,
                 ),
-                onPressed: () async {
-                  if (provider.height.isEmpty || provider.weight.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('กรุณากรอกข้อมูล ส่วนสูง และ น้ำหนัก ก่อนทำการบันทึกข้อมูลครับ'),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
-                    return;
-                  }
-
-                  try {
-                    await provider.saveAllHealthData();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('บันทึกข้อมูลสำเร็จในประวัติวันที่: ${provider.formatPrettyDate(provider.selectedDate)}'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('เกิดข้อผิดพลาดในการบันทึก: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  }
-                },
+                onPressed: _saveAllData,
                 child: const Text(
                   'Save',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
