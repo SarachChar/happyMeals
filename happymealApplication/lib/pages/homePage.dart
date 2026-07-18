@@ -139,10 +139,10 @@ class HomePage extends StatelessWidget {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add),
-        onPressed: () => Navigator.pushNamed(context, '/postexample'),
-      )
+      // floatingActionButton: FloatingActionButton(
+      //   child: const Icon(Icons.add),
+      //   onPressed: () => Navigator.pushNamed(context, '/postexample'),
+      // )
     );
   }
 
