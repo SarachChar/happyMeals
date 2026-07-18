@@ -21,6 +21,12 @@ class DrinkProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void reset() {
+    _selectedDate = null;
+    _drinks = [];
+    notifyListeners();
+  }
+
   void addDrink(Drink drink) {
     _drinks.add(drink);
     notifyListeners();

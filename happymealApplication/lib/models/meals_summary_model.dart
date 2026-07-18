@@ -44,4 +44,14 @@ class MealsSummaryModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void reset() {
+    _totalMeals = 0;
+    _totalFoodItems = 0;
+    _totalCalories = 0;
+    _totalCarb = 0;
+    _totalProtein = 0;
+    _totalFat = 0;
+    notifyListeners();
+  }
+
 }

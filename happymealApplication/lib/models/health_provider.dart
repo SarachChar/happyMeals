@@ -66,4 +66,16 @@ class HealthProvider extends ChangeNotifier {
     _wrist = '';
     notifyListeners();
   }
+
+  void reset() {
+    _height = '';
+    _weight = '';
+    _wrist = '';
+    _todayHeight = '';
+    _todayWeight = '';
+    _todayWrist = '';
+    _todayBMI = 0.0;
+    _selectedDate = DateTime.now();
+    notifyListeners();
+  }
 }

@@ -1,9 +1,11 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:happymeal_application/firebase_options.dart';
 import 'package:happymeal_application/models/drink_provider.dart';
 import 'package:happymeal_application/models/exercise_model.dart';
 import 'package:happymeal_application/models/health_provider.dart';
+import 'package:happymeal_application/models/login_model.dart';
 import 'package:happymeal_application/models/meals_model.dart';
 import 'package:happymeal_application/models/meals_summary_model.dart';
 import 'package:happymeal_application/pages/00_gridpage.dart';
@@ -14,7 +16,7 @@ import 'package:happymeal_application/pages/08_drinkpage.dart';
 import 'package:happymeal_application/pages/11_mealspage.dart';
 import 'package:happymeal_application/pages/88_example_postpage.dart';
 import 'package:happymeal_application/pages/homePage.dart';
-// import 'package:happymeal_application/pages/99_blankpage.dart';
+import 'package:happymeal_application/pages/loginPage.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
@@ -26,13 +28,14 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => LoginModel()),
         ChangeNotifierProvider(create: (_) => HealthProvider()),
         ChangeNotifierProvider(create: (_) => ExerciseModel ()),
         ChangeNotifierProvider(create: (_) => MealsSummaryModel()),
         ChangeNotifierProvider(create: (_) => MealsModel()),
         ChangeNotifierProvider(create: (_) => DrinkProvider()),
       ],
-      child: const MyApp(),
+      child: AuthGate(),
     ),
   );
 }
@@ -57,6 +60,29 @@ class MyApp extends StatelessWidget {
         '/addexercise': (context) => AddExercisePage(),
         '/home':(context) => HomePage(),
         '/postexample':(context) => PostPage(),
+      },
+    );
+  }
+}
+
+class AuthGate extends StatelessWidget {
+  @override
+  Widget build(BuildContext context){
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if(!snapshot.hasData) {
+          print('Signed out');
+          return MaterialApp(
+            title: 'Flutter Demo',
+            theme: ThemeData(
+              colorScheme: .fromSeed(seedColor:  const Color(0xFF6E8B5A))
+            ),
+            home: LoginPage(),
+          );
+        }
+        print('Signed in as ${snapshot.data?.email}.');
+        return MyApp();
       },
     );
   }

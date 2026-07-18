@@ -22,4 +22,9 @@ class MealsModel extends ChangeNotifier {
     _meals.remove(meal);
     notifyListeners();
   }
+
+  void reset() {
+    _meals.clear();
+    notifyListeners();
+  }
 }

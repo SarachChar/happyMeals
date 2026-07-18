@@ -38,4 +38,9 @@ class ExerciseModel extends ChangeNotifier {
       ..addAll(entries);
     notifyListeners();
   }
+
+  void reset() {
+    _entries.clear();
+    notifyListeners();
+  }
 }

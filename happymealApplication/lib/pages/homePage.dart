@@ -1,11 +1,14 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:happymeal_application/models/drink_provider.dart';
 import 'package:happymeal_application/models/exercise_model.dart';
 import 'package:happymeal_application/models/health_provider.dart';
+import 'package:happymeal_application/models/login_model.dart';
+import 'package:happymeal_application/models/meals_model.dart';
 import 'package:happymeal_application/models/meals_summary_model.dart';
 import 'package:provider/provider.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   // Daily goals (used for the progress ring / summary card).
@@ -20,6 +23,11 @@ class HomePage extends StatelessWidget {
     'July', 'August', 'September', 'October', 'November', 'December',
   ];
 
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -43,8 +51,10 @@ class HomePage extends StatelessWidget {
     final int totalMl = drinkData.totalMlFor(todayKey);
     final int totalCups = drinkData.totalCupFor(todayKey);
 
+    final String userEmail = context.read<LoginModel>().username;
+
     final double calorieProgress =
-        (totalCalories / calorieGoal).clamp(0.0, 1.0);
+        (totalCalories / HomePage.calorieGoal).clamp(0.0, 1.0);
 
     return Scaffold(
       backgroundColor: scheme.surface,
@@ -55,6 +65,7 @@ class HomePage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(scheme, today),
+              Text(userEmail),
               Padding(
                 padding: const EdgeInsets.only(top: 28),
                 child: _buildSummaryCard(
@@ -139,16 +150,16 @@ class HomePage extends StatelessWidget {
           ),
         ),
       ),
-      // floatingActionButton: FloatingActionButton(
-      //   child: const Icon(Icons.add),
-      //   onPressed: () => Navigator.pushNamed(context, '/postexample'),
-      // )
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.logout),
+        onPressed: () => _LogOut(),
+      )
     );
   }
 
   Widget _buildHeader(ColorScheme scheme, DateTime today) {
     final dateLabel =
-        '${_weekdays[today.weekday - 1]}, ${_months[today.month - 1]} ${today.day}';
+        '${HomePage._weekdays[today.weekday - 1]}, ${HomePage._months[today.month - 1]} ${today.day}';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,14 +219,14 @@ class HomePage extends StatelessWidget {
                   dotColor: scheme.primary,
                   label: 'CALORIES',
                   value: _formatNumber(totalCalories),
-                  suffix: ' / ${_formatNumber(calorieGoal)} kcal',
+                  suffix: ' / ${_formatNumber(HomePage.calorieGoal)} kcal',
                 ),
                 _buildMetricRow(
                   scheme,
                   dotColor: scheme.tertiary,
                   label: 'EXERCISE',
                   value: '$exerciseDuration',
-                  suffix: ' / $exerciseGoalMinutes min',
+                  suffix: ' / ${HomePage.exerciseGoalMinutes} min',
                 ),
               ],
             ),
@@ -483,5 +494,44 @@ class HomePage extends StatelessWidget {
       buffer.write(s[i]);
     }
     return buffer.toString();
+  }
+
+  Future<void> _LogOut() async {
+    // Capture provider references before the async gap (dialog await).
+    final loginModel = context.read<LoginModel>();
+    final healthProvider = context.read<HealthProvider>();
+    final exerciseModel = context.read<ExerciseModel>();
+    final mealsSummaryModel = context.read<MealsSummaryModel>();
+    final mealsModel = context.read<MealsModel>();
+    final drinkProvider = context.read<DrinkProvider>();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Log out'),
+        content: Text('Are you sure?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    // Clear all in-memory provider state so the next user starts fresh.
+    loginModel.reset();
+    healthProvider.reset();
+    exerciseModel.reset();
+    mealsSummaryModel.reset();
+    mealsModel.reset();
+    drinkProvider.reset();
+
+    await FirebaseAuth.instance.signOut();
   }
 }
