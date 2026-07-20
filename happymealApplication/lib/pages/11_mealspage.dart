@@ -48,7 +48,7 @@ class _MealsPageState extends State<MealsPage> {
       final meals = await _mealController.fetchMealsByDate(DateTime.now(), userId);
       if (!mounted) return;
       mealsModel.setMeals(meals);
-      _recalculateSummary(mealsModel, context.read<MealsSummaryModel>());
+      recalculateSummary(mealsModel, context.read<MealsSummaryModel>());
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -79,7 +79,7 @@ class _MealsPageState extends State<MealsPage> {
 
     final mealsModel = context.read<MealsModel>();
     mealsModel.removeMeal(meal);
-    _recalculateSummary(mealsModel, context.read<MealsSummaryModel>());
+    recalculateSummary(mealsModel, context.read<MealsSummaryModel>());
 
     try {
       await _mealController.updateMeal(meal);
@@ -346,7 +346,7 @@ class _AddMealPageState extends State<AddMealPage> {
     }
 
     if (!mounted) return;
-    _recalculateSummary(mealsModel, context.read<MealsSummaryModel>());
+    recalculateSummary(mealsModel, context.read<MealsSummaryModel>());
 
     Navigator.pop(context);
   }
@@ -934,7 +934,7 @@ class NutritionBox extends StatelessWidget {
   }
 }
 
-void _recalculateSummary(MealsModel mealsModel, MealsSummaryModel summary) {
+void recalculateSummary(MealsModel mealsModel, MealsSummaryModel summary) {
   int items = 0;
   int cal = 0;
   int carb = 0;

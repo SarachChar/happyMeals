@@ -1,11 +1,15 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:happymeal_application/controllers/meal_controller.dart';
 import 'package:happymeal_application/models/drink_provider.dart';
 import 'package:happymeal_application/models/exercise_model.dart';
 import 'package:happymeal_application/models/health_provider.dart';
 import 'package:happymeal_application/models/login_model.dart';
 import 'package:happymeal_application/models/meals_model.dart';
 import 'package:happymeal_application/models/meals_summary_model.dart';
+import 'package:happymeal_application/pages/11_mealspage.dart';
+import 'package:happymeal_application/services/meal_service.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -28,6 +32,46 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final MealController _mealController = MealController(MealFirebaseService());
+
+  bool _isLoading = false;
+  StreamSubscription<bool>? _syncSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncSub = _mealController.onSync.listen((bool syncState) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = syncState;
+      });
+    });
+    _loadMeals();
+  }
+
+  @override
+  void dispose() {
+    _syncSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadMeals() async {
+    final mealsModel = context.read<MealsModel>();
+    if (mealsModel.meals.isNotEmpty) return;
+    final userId = context.read<LoginModel>().userId;
+    try {
+      final meals = await _mealController.fetchMealsByDate(DateTime.now(), userId);
+      if (!mounted) return;
+      mealsModel.setMeals(meals);
+      recalculateSummary(mealsModel, context.read<MealsSummaryModel>());
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load meals: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -59,7 +103,9 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       backgroundColor: scheme.surface,
-      body: SafeArea(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
           child: Column(
