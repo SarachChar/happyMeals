@@ -44,12 +44,14 @@ class Meal {
     required this.mealName,
     required this.createdAt,
     required this.foods,
+    this.userId = '',
     this.isDelete = false,
   });
 
   final String mealName;
   final DateTime createdAt;
   final List<Food> foods;
+  final String userId;
   final bool isDelete;
 
   Map<String, dynamic> toMap() {
@@ -57,6 +59,7 @@ class Meal {
       'mealName': mealName,
       'createdAt': createdAt.toIso8601String(),
       'foods': foods.map((food) => food.toMap()).toList(),
+      'userId': userId,
       'isDelete': isDelete,
     };
   }
@@ -68,6 +71,7 @@ class Meal {
       foods: (snapshot['foods'] as List? ?? [])
           .map((food) => Food.fromMap(food as Map<String, dynamic>))
           .toList(),
+      userId: snapshot['userId'] as String? ?? '',
       isDelete: snapshot['isDelete'] as bool? ?? false,
     );
   }

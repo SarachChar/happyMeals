@@ -3,8 +3,8 @@ import 'package:happymeal_application/models/meal_data_model.dart';
 
 abstract class MealService {
   Future<void> addMeal(Meal meal);
-  Future<List<Meal>> getMeals();
-  Future<List<Meal>> getMealsByDate(DateTime date);
+  Future<List<Meal>> getMeals(String userId);
+  Future<List<Meal>> getMealsByDate(DateTime date, String userId);
   Future<void> updateMeal(Meal meal);
 }
 
@@ -19,31 +19,34 @@ String mealDocId(DateTime dt) {
 class MealFirebaseService implements MealService {
   @override
   Future<void> addMeal(Meal meal) async {
-    await FirebaseFirestore.instance.collection('meals').doc(mealDocId(meal.createdAt)).set({
-      ...meal.toMap(),
-      'timestamp': FieldValue.serverTimestamp(),
+    await FirebaseFirestore.instance.collection('meals')
+      .doc(mealDocId(meal.createdAt))
+      .set({
+        ...meal.toMap(),
+        'timestamp': FieldValue.serverTimestamp(),
     });
   }
 
   @override
-  Future<List<Meal>> getMeals() async {
-    final qs = await FirebaseFirestore.instance.collection('meals').get();
-    return qs.docs.map((doc) => Meal.fromSnapshot(doc.data()))
-        .where((meal) => !meal.isDelete)
-        .toList();
+  Future<List<Meal>> getMeals(String userId) async {
+    final qs = await FirebaseFirestore.instance.collection('meals')
+        .where('userId', isEqualTo: userId)
+        .where('isDelete', isEqualTo: false)
+        .get();
+    return qs.docs.map((doc) => Meal.fromSnapshot(doc.data())).toList();
   }
 
   @override
-  Future<List<Meal>> getMealsByDate(DateTime date) async {
+  Future<List<Meal>> getMealsByDate(DateTime date, String userId) async {
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
     final qs = await FirebaseFirestore.instance.collection('meals')
+        .where('userId', isEqualTo: userId)
+        .where('isDelete', isEqualTo: false)
         .where('createdAt', isGreaterThanOrEqualTo: start.toIso8601String())
         .where('createdAt', isLessThan: end.toIso8601String())
         .get();
-    return qs.docs.map((doc) => Meal.fromSnapshot(doc.data()))
-        .where((meal) => !meal.isDelete)
-        .toList();
+    return qs.docs.map((doc) => Meal.fromSnapshot(doc.data())).toList();
   }
 
   @override

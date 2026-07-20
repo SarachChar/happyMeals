@@ -16,16 +16,16 @@ class MealController {
     onSyncController.add(false);
   }
 
-  Future<List<Meal>> fetchMeals() async {
+  Future<List<Meal>> fetchMeals(String userId) async {
     onSyncController.add(true);
-    final meals = await service.getMeals();
+    final meals = await service.getMeals(userId);
     onSyncController.add(false);
     return meals;
   }
 
-  Future<List<Meal>> fetchMealsByDate(DateTime date) async {
+  Future<List<Meal>> fetchMealsByDate(DateTime date, String userId) async {
     onSyncController.add(true);
-    final meals = await service.getMealsByDate(date);
+    final meals = await service.getMealsByDate(date, userId);
     onSyncController.add(false);
     return meals;
   }

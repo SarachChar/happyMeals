@@ -526,7 +526,6 @@ class _HomePageState extends State<HomePage> {
     );
     if (confirmed != true) return;
 
-    // Clear all in-memory provider state so the next user starts fresh.
     loginModel.reset();
     healthProvider.reset();
     exerciseModel.reset();

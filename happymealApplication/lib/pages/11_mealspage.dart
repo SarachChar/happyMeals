@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:happymeal_application/controllers/meal_controller.dart';
+import 'package:happymeal_application/models/login_model.dart';
 import 'package:happymeal_application/models/meal_data_model.dart';
 import 'package:happymeal_application/models/meals_model.dart';
 import 'package:happymeal_application/models/meals_summary_model.dart';
@@ -42,8 +43,9 @@ class _MealsPageState extends State<MealsPage> {
   Future<void> _loadMeals() async {
     final mealsModel = context.read<MealsModel>();
     if (mealsModel.meals.isNotEmpty) return;
+    final userId = context.read<LoginModel>().userId;
     try {
-      final meals = await _mealController.fetchMealsByDate(DateTime.now());
+      final meals = await _mealController.fetchMealsByDate(DateTime.now(), userId);
       if (!mounted) return;
       mealsModel.setMeals(meals);
       _recalculateSummary(mealsModel, context.read<MealsSummaryModel>());
@@ -322,10 +324,13 @@ class _AddMealPageState extends State<AddMealPage> {
     }
     _mealFormKey.currentState!.save();
 
+    final userId = context.read<LoginModel>().userId;
+
     final meal = Meal(
       mealName: _mealName!,
       createdAt: DateTime.now(),
       foods: List<Food>.from(_foods),
+      userId: userId,
     );
 
     final mealsModel = context.read<MealsModel>();
