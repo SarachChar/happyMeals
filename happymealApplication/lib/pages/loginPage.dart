@@ -14,6 +14,7 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   int _passwordLength = 0;
   bool _showPassword = false;
+  bool _isLoading = false;
   String? _username;
   String? _password;
 
@@ -43,6 +44,10 @@ class _LoginPageState extends State<LoginPage> {
 
     var registerMessage = '';
 
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
       final credential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
@@ -57,6 +62,12 @@ class _LoginPageState extends State<LoginPage> {
       loginModel.userId = credential.user!.uid;
     } on FirebaseAuthException catch (e) {
       registerMessage = e.code;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
 
     if (!mounted) return;
@@ -64,6 +75,55 @@ class _LoginPageState extends State<LoginPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(registerMessage),
+      ),
+    );
+  }
+
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Input is invalid'),
+        ),
+      );
+      return;
+    }
+
+    _formKey.currentState!.save();
+
+    final loginModel = context.read<LoginModel>();
+
+    var loginMessage = '';
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final credential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(
+            email: _username!,
+            password: _password!,
+          );
+
+      loginMessage = 'Signed in successfully for ${credential.user?.uid}';
+      loginModel.username = _username!;
+      loginModel.userId = credential.user!.uid;
+    } on FirebaseAuthException catch (e) {
+      loginMessage = 'Error ${e.message}';
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(loginMessage),
       ),
     );
   }
@@ -141,47 +201,31 @@ class _LoginPageState extends State<LoginPage> {
                 },
               ),
             ),
-            ElevatedButton(
-              child: Text('Login'),
-              onPressed: () async {
-                if(!_formKey.currentState!.validate()) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Input is invalid'),
-                    ),
-                  );
-                  return;
-                }
-
-                _formKey.currentState!.save();
-
-                final loginModel = context.read<LoginModel>();
-
-                var loginMessage = '';
-
-                try {
-                  final credential = await FirebaseAuth.instance
-                    .signInWithEmailAndPassword(
-                      email: _username!,
-                      password: _password!,
-                    );
-
-                  loginMessage = 'Signed in successfully for ${credential.user?.uid}';
-                  loginModel.username = _username!;
-                  loginModel.userId = credential.user!.uid;
-
-                } on FirebaseAuthException catch (e) {
-                  loginMessage = 'Error ${e.message}';
-                }
-
-                if (!mounted) return;
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(loginMessage),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _login,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                );
-              },
+                ),
+                child: _isLoading
+                    ? CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      )
+                    : const Text(
+                        'Login',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
@@ -197,7 +241,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
             TextButton(
-              onPressed: _register,
+              onPressed: _isLoading ? null : _register,
               child: Text('Create an account'),
             ),
           ],
