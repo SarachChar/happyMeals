@@ -12,16 +12,16 @@ class DrinkController {
 
   DrinkController(this.service);
 
-  Future<List<Drink>> fetchDrinks() async {
+  Future<List<Drink>> fetchDrinks(String userId) async {
     _onSyncController.add(true);
-    drinks = await service.getDrinks();
+    drinks = await service.getDrinks(userId);
     _onSyncController.add(false);
     return drinks;
   }
 
-  Future<Drink> addDrink(Drink drink) async {
+  Future<Drink> addDrink(Drink drink, String userId) async {
     _onSyncController.add(true);
-    Drink newDrink = await service.addDrink(drink);
+    Drink newDrink = await service.addDrink(drink, userId);
     _onSyncController.add(false);
     return newDrink;
   }

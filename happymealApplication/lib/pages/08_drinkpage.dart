@@ -4,6 +4,7 @@ import 'package:happymeal_application/controllers/drink_controller.dart';
 import 'package:happymeal_application/models/drink_model.dart';
 import 'package:happymeal_application/models/drink_provider.dart';
 import 'package:happymeal_application/services/drink_service.dart';
+import 'package:happymeal_application/models/login_model.dart';
 import '09_choosedrinkpage.dart';
 
 class DrinkPage extends StatefulWidget {
@@ -33,7 +34,8 @@ class _DrinkPageState extends State<DrinkPage> {
   }
 
   Future<void> _fetchDrinks() async {
-    final drinks = await controller.fetchDrinks();
+    final userId = context.read<LoginModel>().userId as String;
+    final drinks = await controller.fetchDrinks(userId);
     if (!mounted) return;
     context.read<DrinkProvider>().setDrinks(drinks);
   }
@@ -71,7 +73,8 @@ class _DrinkPageState extends State<DrinkPage> {
       date: currentDate,
     );
 
-    final savedDrink = await controller.addDrink(newDrink);
+    final userId = context.read<LoginModel>().userId as String;
+    final savedDrink = await controller.addDrink(newDrink, userId);
     if (!mounted) return;
     context.read<DrinkProvider>().addDrink(savedDrink);
 
@@ -88,6 +91,32 @@ class _DrinkPageState extends State<DrinkPage> {
         ),
       );
     }
+  }
+
+  Future<void> _deleteDrink(Drink drink) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("ลบเครื่องดื่ม"),
+        content: Text('ต้องการลบ "${drink.drinkName}" ใช่หรือไม่?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("ยกเลิก"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("ลบ", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await controller.deleteDrink(drink);
+    if (!mounted) return;
+    await _fetchDrinks();
   }
 
   @override
@@ -301,6 +330,14 @@ class _DrinkPageState extends State<DrinkPage> {
                                         ),
                                       ],
                                     ),
+                                  ),
+
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () => _deleteDrink(drink),
                                   ),
                                 ],
                               ),
