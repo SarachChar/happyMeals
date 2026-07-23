@@ -11,16 +11,16 @@ class HealthController {
 
   HealthController(this.service);
 
-  Future<List<Health>> fetchHealths() async {
+  Future<List<Health>> fetchHealths(String userId) async {
     onSyncController.add(true);
-    entries = await service.getHealths();
+    entries = await service.getHealths(userId);
     onSyncController.add(false);
     return entries;
   }
 
-  Future<List<Health>> fetchHealthsByDate(DateTime date) async {
+  Future<List<Health>> fetchHealthsByDate(DateTime date, String userId) async {
     onSyncController.add(true);
-    entries = await service.getHealthsByDate(date);
+    entries = await service.getHealthsByDate(date, userId);
     onSyncController.add(false);
     return entries;
   }

@@ -3,8 +3,8 @@ import 'package:happymeal_application/models/health_model.dart';
 
 abstract class HealthService {
   Future<Health> addHealth(Health health);
-  Future<List<Health>> getHealths();
-  Future<List<Health>> getHealthsByDate(DateTime date);
+  Future<List<Health>> getHealths(String userId);
+  Future<List<Health>> getHealthsByDate(DateTime date, String userId);
   Future<void> updateHealth(Health health);
 }
 
@@ -31,8 +31,11 @@ class HealthFirebaseService implements HealthService {
   }
 
   @override
-  Future<List<Health>> getHealths() async {
-    final qs = await FirebaseFirestore.instance.collection('health').get();
+  Future<List<Health>> getHealths(String userId) async {
+    final qs = await FirebaseFirestore.instance
+        .collection('health')
+        .where('userId', isEqualTo: userId)
+        .get();
     return qs.docs
         .map((doc) => Health.fromSnapshot(doc.data() as Map<String, dynamic>))
         .where((health) => !health.isDelete)
@@ -40,12 +43,13 @@ class HealthFirebaseService implements HealthService {
   }
 
   @override
-  Future<List<Health>> getHealthsByDate(DateTime date) async {
+  Future<List<Health>> getHealthsByDate(DateTime date, String userId) async {
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
     
     final qs = await FirebaseFirestore.instance
         .collection('health')
+        .where('userId', isEqualTo: userId)
         .where('createdAt', isGreaterThanOrEqualTo: start.toIso8601String())
         .where('createdAt', isLessThan: end.toIso8601String())
         .get();

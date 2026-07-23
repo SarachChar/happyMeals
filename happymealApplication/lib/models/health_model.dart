@@ -4,6 +4,7 @@ class Health {
   final String weight;
   final String wrist;
   final double bmi;
+  final String userId;
   final bool isDelete;
 
   Health({
@@ -12,6 +13,7 @@ class Health {
     required this.weight,
     required this.wrist,
     required this.bmi,
+    required this.userId,
     this.isDelete = false,
   });
 
@@ -22,6 +24,7 @@ class Health {
       'weight': weight,
       'wrist': wrist,
       'bmi': bmi,
+      'userId': userId,
       'isDelete': isDelete,
     };
   }
@@ -33,6 +36,7 @@ class Health {
       weight: map['weight'] ?? '',
       wrist: map['wrist'] ?? '',
       bmi: (map['bmi'] as num?)?.toDouble() ?? 0.0,
+      userId: map['userId'] ?? '',
       isDelete: map['isDelete'] ?? false,
     );
   }

@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:happymeal_application/controllers/drink_controller.dart';
 import 'package:happymeal_application/controllers/exercise_controller.dart';
+import 'package:happymeal_application/controllers/health_controller.dart';
 import 'package:happymeal_application/controllers/meal_controller.dart';
 import 'package:happymeal_application/models/drink_provider.dart';
 import 'package:happymeal_application/models/exercise_model.dart';
@@ -12,6 +13,7 @@ import 'package:happymeal_application/models/meals_summary_model.dart';
 import 'package:happymeal_application/pages/11_mealspage.dart';
 import 'package:happymeal_application/services/drink_service.dart';
 import 'package:happymeal_application/services/exercise_service.dart';
+import 'package:happymeal_application/services/health_service.dart';
 import 'package:happymeal_application/services/meal_service.dart';
 import 'package:provider/provider.dart';
 
@@ -38,6 +40,7 @@ class _HomePageState extends State<HomePage> {
   final MealController _mealController = MealController(MealFirebaseService());
   final ExerciseController _exerciseController = ExerciseController(ExerciseFirebaseService());
   final DrinkController _drinkController = DrinkController(DrinkFirebaseService());
+  final HealthController _healthController = HealthController(HealthFirebaseService());
 
   bool _isLoading = false;
 
@@ -49,6 +52,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
+    _drinkController.dispose();
     super.dispose();
   }
 
@@ -58,6 +62,7 @@ class _HomePageState extends State<HomePage> {
       _loadMeals(),
       _loadExercises(),
       _loadDrinks(),
+      _loadHealth(),
     ]);
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -109,6 +114,32 @@ class _HomePageState extends State<HomePage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to load drinks: $e')),
+      );
+    }
+  }
+
+  Future<void> _loadHealth() async {
+    final healthProvider = context.read<HealthProvider>();
+    if (healthProvider.todayHeight.isNotEmpty ||
+        healthProvider.todayWeight.isNotEmpty) {
+      return;
+    }
+    final userId = context.read<LoginModel>().userId;
+    try {
+      final results =
+          await _healthController.fetchHealthsByDate(DateTime.now(), userId);
+      if (!mounted) return;
+      if (results.isNotEmpty) {
+        final latest = results.last;
+        healthProvider.todayHeight = latest.height;
+        healthProvider.todayWeight = latest.weight;
+        healthProvider.todayWrist = latest.wrist;
+        healthProvider.todayBMI = latest.bmi;
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load health: $e')),
       );
     }
   }

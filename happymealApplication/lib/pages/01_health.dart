@@ -5,6 +5,7 @@ import 'package:happymeal_application/controllers/health_controller.dart';
 import 'package:happymeal_application/models/health_model.dart';
 import 'package:happymeal_application/services/health_service.dart';
 import 'package:happymeal_application/models/health_provider.dart';
+import 'package:happymeal_application/models/login_model.dart'; 
 import 'package:happymeal_application/pages/02_height.dart';
 import 'package:happymeal_application/pages/03_weight.dart';
 import 'package:happymeal_application/pages/04_wrist.dart';
@@ -53,7 +54,8 @@ class _HealthPageState extends State<HealthPage> {
 
   Future<void> _fetchDataForDate(DateTime date) async {
     try {
-      final results = await _controller.fetchHealthsByDate(date);
+      final userId = context.read<LoginModel>().userId;
+      final results = await _controller.fetchHealthsByDate(date, userId);
       if (!mounted) return;
 
       final provider = context.read<HealthProvider>();
@@ -88,6 +90,7 @@ class _HealthPageState extends State<HealthPage> {
 
   Future<void> _saveAllData() async {
     final provider = context.read<HealthProvider>();
+    final userId = context.read<LoginModel>().userId;
     
     if (provider.height.isEmpty || provider.weight.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -109,7 +112,7 @@ class _HealthPageState extends State<HealthPage> {
         bmiVal = 0.0;
       }
 
-      List<Health> existingEntries = await _controller.fetchHealthsByDate(provider.selectedDate);
+      List<Health> existingEntries = await _controller.fetchHealthsByDate(provider.selectedDate, userId);
       if (existingEntries.isNotEmpty) {
         for (var entry in existingEntries) {
           await _controller.updateHealth(entry);
@@ -129,11 +132,11 @@ class _HealthPageState extends State<HealthPage> {
         weight: provider.weight,
         wrist: provider.wrist,
         bmi: bmiVal,
+        userId: userId,
       );
 
       await _controller.addHealth(newHealth);
       
-
       await _fetchDataForDate(provider.selectedDate);
 
       if (mounted) {
