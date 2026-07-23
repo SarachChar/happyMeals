@@ -32,7 +32,8 @@ class _ExercisePageState extends State<ExercisePage> {
 
   Future<void> _fetchExercises() async {
     final userId = context.read<LoginModel>().userId;
-    final entries = await controller.fetchExercises(userId);
+    final entries =
+        await controller.fetchExercisesByDate(userId, DateTime.now());
     if (!mounted) return;
     context.read<ExerciseModel>().setEntries(entries);
   }

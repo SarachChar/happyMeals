@@ -18,6 +18,13 @@ class ExerciseController {
     return entries;
   }
 
+  Future<List<ExerciseLogEntry>> fetchExercisesByDate(String userId, DateTime date) async {
+    onSyncController.add(true);
+    entries = await service.getExercisesByDate(userId, date);
+    onSyncController.add(false);
+    return entries;
+  }
+
   Future<ExerciseLogEntry> addExercise(ExerciseLogEntry entry) async {
     onSyncController.add(true);
     ExerciseLogEntry newEntry = await service.addExercise(entry);

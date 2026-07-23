@@ -3,6 +3,7 @@ import 'package:happymeal_application/components/exercise_log.dart';
 
 abstract class ExerciseService {
   Future<List<ExerciseLogEntry>> getExercises(String userId);
+  Future<List<ExerciseLogEntry>> getExercisesByDate(String userId, DateTime date);
   Future<ExerciseLogEntry> addExercise(ExerciseLogEntry entry);
   Future<void> deleteExercise(ExerciseLogEntry entry);
 }
@@ -22,6 +23,22 @@ class ExerciseFirebaseService implements ExerciseService {
         .collection('exercises')
         .where('userId', isEqualTo: userId)
         .where('isDelete', isEqualTo: false)
+        .get();
+    AllExercises all = AllExercises.fromSnapshot(qs);
+    return all.exercises;
+  }
+
+  @override
+  Future<List<ExerciseLogEntry>> getExercisesByDate(String userId, DateTime date) async {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    QuerySnapshot qs = await FirebaseFirestore.instance
+        .collection('exercises')
+        .where('userId', isEqualTo: userId)
+        .where('isDelete', isEqualTo: false)
+        .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('timestamp', isLessThan: Timestamp.fromDate(endOfDay))
         .get();
     AllExercises all = AllExercises.fromSnapshot(qs);
     return all.exercises;
