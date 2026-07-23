@@ -1,6 +1,7 @@
-import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:happymeal_application/controllers/drink_controller.dart';
+import 'package:happymeal_application/controllers/exercise_controller.dart';
 import 'package:happymeal_application/controllers/meal_controller.dart';
 import 'package:happymeal_application/models/drink_provider.dart';
 import 'package:happymeal_application/models/exercise_model.dart';
@@ -9,6 +10,8 @@ import 'package:happymeal_application/models/login_model.dart';
 import 'package:happymeal_application/models/meals_model.dart';
 import 'package:happymeal_application/models/meals_summary_model.dart';
 import 'package:happymeal_application/pages/11_mealspage.dart';
+import 'package:happymeal_application/services/drink_service.dart';
+import 'package:happymeal_application/services/exercise_service.dart';
 import 'package:happymeal_application/services/meal_service.dart';
 import 'package:provider/provider.dart';
 
@@ -33,26 +36,31 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final MealController _mealController = MealController(MealFirebaseService());
+  final ExerciseController _exerciseController = ExerciseController(ExerciseFirebaseService());
+  final DrinkController _drinkController = DrinkController(DrinkFirebaseService());
 
   bool _isLoading = false;
-  StreamSubscription<bool>? _syncSub;
 
   @override
   void initState() {
     super.initState();
-    _syncSub = _mealController.onSync.listen((bool syncState) {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = syncState;
-      });
-    });
-    _loadMeals();
+    _loadAll();
   }
 
   @override
   void dispose() {
-    _syncSub?.cancel();
     super.dispose();
+  }
+
+  Future<void> _loadAll() async {
+    setState(() => _isLoading = true);
+    await Future.wait([
+      _loadMeals(),
+      _loadExercises(),
+      _loadDrinks(),
+    ]);
+    if (!mounted) return;
+    setState(() => _isLoading = false);
   }
 
   Future<void> _loadMeals() async {
@@ -68,6 +76,39 @@ class _HomePageState extends State<HomePage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to load meals: $e')),
+      );
+    }
+  }
+
+  Future<void> _loadExercises() async {
+    final exerciseModel = context.read<ExerciseModel>();
+    if (exerciseModel.entries.isNotEmpty) return;
+    final userId = context.read<LoginModel>().userId;
+    try {
+      final entries =
+          await _exerciseController.fetchExercisesByDate(userId, DateTime.now());
+      if (!mounted) return;
+      exerciseModel.setEntries(entries);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load exercises: $e')),
+      );
+    }
+  }
+
+  Future<void> _loadDrinks() async {
+    final drinkProvider = context.read<DrinkProvider>();
+    if (drinkProvider.drinks.isNotEmpty) return;
+    final userId = context.read<LoginModel>().userId;
+    try {
+      final drinks = await _drinkController.fetchDrinks(userId);
+      if (!mounted) return;
+      drinkProvider.setDrinks(drinks);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load drinks: $e')),
       );
     }
   }
