@@ -39,6 +39,11 @@ class ExerciseModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void removeEntry(ExerciseLogEntry entry) {
+    _entries.removeWhere((e) => e.dbId == entry.dbId);
+    notifyListeners();
+  }
+
   void reset() {
     _entries.clear();
     notifyListeners();

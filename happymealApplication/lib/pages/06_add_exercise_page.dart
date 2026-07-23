@@ -120,102 +120,122 @@ class _AddExercisePageState extends State<AddExercisePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Exercise Type'),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _goToChooseExerciseType,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 254, 254, 254),
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Text('Exercise Type'),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _goToChooseExerciseType,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(255, 254, 254, 254),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text('Choose your activity - $_selectedType'),
+                  ),
+                ),
+              ),
+
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Text('Duration (minutes)'),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: TextFormField(
+                  controller: _durationController,
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: const Color.fromARGB(255, 254, 254, 254),
+                    border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
                     ),
                   ),
-                  child: Text('Choose your activity - $_selectedType'),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              const Text('Duration (minutes)'),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _durationController,
-                keyboardType: TextInputType.number,
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: const Color.fromARGB(255, 254, 254, 254),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Please enter duration';
-                  if (int.tryParse(value) == null) return 'Numbers only';
-                  if (int.parse(value) <= 0) return 'Must be greater than 0';
-                  return null;
-                },
-                onSaved: (value) {
-                  _saveDuration = int.tryParse(value ?? '') ?? 0;
-                },
-              ),
-              const SizedBox(height: 20),
-
-              const Text('Intensity'),
-              const SizedBox(height: 8),
-              ChoiceCard(
-                choiceData: ChoiceData(
-                  title: '',
-                  choices: _intensityLevels,
-                  groupValue: getIntensityValue(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedIntensity = _intensityLevels[value - 1];
-                    });
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return 'Please enter duration';
+                    if (int.tryParse(value) == null) return 'Numbers only';
+                    if (int.parse(value) <= 0) return 'Must be greater than 0';
+                    return null;
+                  },
+                  onSaved: (value) {
+                    _saveDuration = int.tryParse(value ?? '') ?? 0;
                   },
                 ),
               ),
-              const SizedBox(height: 20),
 
-              const Text('Time', style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 254, 254, 254),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${DateTime.now().hour.toString().padLeft(2, '0')}:'
-                  '${DateTime.now().minute.toString().padLeft(2, '0')}',
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Text('Intensity'),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: ChoiceCard(
+                  choiceData: ChoiceData(
+                    title: '',
+                    choices: _intensityLevels,
+                    groupValue: getIntensityValue(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedIntensity = _intensityLevels[value - 1];
+                      });
+                    },
+                  ),
                 ),
               ),
-              const SizedBox(height: 20),
 
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: theme,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.local_fire_department, color: Colors.black),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Estimated calories burned: ${calculateEstimatedCalories()} kcal',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ],
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Text('Time', style: TextStyle(fontWeight: FontWeight.w600)),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 254, 254, 254),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${DateTime.now().hour.toString().padLeft(2, '0')}:'
+                    '${DateTime.now().minute.toString().padLeft(2, '0')}',
+                  ),
                 ),
               ),
-              const SizedBox(height: 20),
+
+              Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: theme,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(right: 10),
+                        child: Icon(Icons.local_fire_department, color: Colors.black),
+                      ),
+                      Text(
+                        'Estimated calories burned: ${calculateEstimatedCalories()} kcal',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
 
               SizedBox(
                 width: double.infinity,

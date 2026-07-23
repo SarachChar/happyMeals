@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "218386116216",
-    "project_id": "is767-2025-3-pong",
-    "storage_bucket": "is767-2025-3-pong.firebasestorage.app"
+    "project_number": "513884943046",
+    "project_id": "is767-2025-3-missthee",
+    "storage_bucket": "is767-2025-3-missthee.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:218386116216:android:1aa994ae4e8145ec67078d",
+        "mobilesdk_app_id": "1:513884943046:android:ee1c269d8fce644ac31dc7",
         "android_client_info": {
           "package_name": "com.example.first_app"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAoUyp4uP-MiyUlBwyRNpxdy1y8gj31jig"
+          "current_key": "AIzaSyBo4WTIqg2nIzpBXiBUKUYkG5sczuKHjp8"
         }
       ],
       "services": {
@@ -26,7 +26,7 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:218386116216:android:9e1c19032c8f88dd67078d",
+        "mobilesdk_app_id": "1:513884943046:android:1421d976f54cd244c31dc7",
         "android_client_info": {
           "package_name": "com.example.happymeal_application"
         }
@@ -34,7 +34,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAoUyp4uP-MiyUlBwyRNpxdy1y8gj31jig"
+          "current_key": "AIzaSyBo4WTIqg2nIzpBXiBUKUYkG5sczuKHjp8"
         }
       ],
       "services": {

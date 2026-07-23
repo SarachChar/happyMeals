@@ -11,9 +11,9 @@ class ExerciseController {
 
   ExerciseController(this.service);
 
-  Future<List<ExerciseLogEntry>> fetchExercises() async {
+  Future<List<ExerciseLogEntry>> fetchExercises(String userId) async {
     onSyncController.add(true);
-    entries = await service.getExercises();
+    entries = await service.getExercises(userId);
     onSyncController.add(false);
     return entries;
   }

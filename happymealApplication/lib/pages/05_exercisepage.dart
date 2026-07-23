@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:happymeal_application/components/exercise_log.dart';
 import 'package:happymeal_application/controllers/exercise_controller.dart';
 import 'package:happymeal_application/models/exercise_model.dart';
+import 'package:happymeal_application/models/login_model.dart';
 import 'package:happymeal_application/services/exercise_service.dart';
 import 'package:provider/provider.dart';
 
@@ -30,17 +31,46 @@ class _ExercisePageState extends State<ExercisePage> {
   }
 
   Future<void> _fetchExercises() async {
-    final entries = await controller.fetchExercises();
+    final userId = context.read<LoginModel>().userId;
+    final entries = await controller.fetchExercises(userId);
     if (!mounted) return;
     context.read<ExerciseModel>().setEntries(entries);
   }
 
   Future<void> _goToAddExercisePage() async {
+    final userId = context.read<LoginModel>().userId;
     final result = await Navigator.pushNamed(context, '/addexercise');
+    if (!mounted) return;
     if (result is ExerciseLogEntry) {
-      final savedEntry = await controller.addExercise(result);
+      final entry = ExerciseLogEntry(
+        time: result.time,
+        type: result.type,
+        intensity: result.intensity,
+        durationMinutes: result.durationMinutes,
+        caloriesBurned: result.caloriesBurned,
+        icon: result.icon,
+        userId: userId,
+      );
+      final savedEntry = await controller.addExercise(entry);
       if (!mounted) return;
       context.read<ExerciseModel>().addEntry(savedEntry);
+    }
+  }
+
+  Future<void> _deleteExercise(ExerciseLogEntry entry) async {
+    context.read<ExerciseModel>().removeEntry(entry);
+
+    try {
+      await controller.deleteExercise(entry);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Deleted "${entry.type}"')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete exercise: $e')),
+      );
     }
   }
 
@@ -138,38 +168,44 @@ class _ExercisePageState extends State<ExercisePage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 44,
-          height: 44,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: accentColor.withValues(alpha: 0.12),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: accentColor, size: 22),
-        ),
-        const SizedBox(height: 14),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: Colors.black.withValues(alpha: 0.55),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: Container(
+            width: 44,
+            height: 44,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: accentColor.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: accentColor, size: 22),
           ),
         ),
-        const SizedBox(height: 6),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.black.withValues(alpha: 0.55),
+            ),
+          ),
+        ),
         Row(
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-            const SizedBox(width: 4),
             Text(
               unit,
               style: const TextStyle(fontSize: 12, color: Colors.black54),
@@ -193,11 +229,13 @@ class _ExercisePageState extends State<ExercisePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Exercise Log',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          const Padding(
+            padding: EdgeInsets.only(bottom: 16),
+            child: Text(
+              'Exercise Log',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
           ),
-          const SizedBox(height: 16),
           Expanded(
             child: Center(
               child: Text(
@@ -214,7 +252,7 @@ class _ExercisePageState extends State<ExercisePage> {
     );
   }
 
-  
+
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -227,12 +265,13 @@ class _ExercisePageState extends State<ExercisePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Exercise Log',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          const Padding(
+            padding: EdgeInsets.only(bottom: 16),
+            child: Text(
+              'Exercise Log',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
           ),
-          const SizedBox(height: 16),
-
           Expanded(
             child: ListView.builder(
               itemCount: entries.length,
@@ -250,34 +289,38 @@ class _ExercisePageState extends State<ExercisePage> {
   Widget _buildLogCard(BuildContext context, ExerciseLogEntry entry) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(14, 14, 4, 14),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-            child: Icon(
-              entry.icon,
-              color: Theme.of(context).colorScheme.primary,
-              size: 20,
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: CircleAvatar(
+              radius: 22,
+              backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+              child: Icon(
+                entry.icon,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
             ),
           ),
-          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  entry.type,
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    entry.type,
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                  ),
                 ),
-                const SizedBox(height: 4),
                 Text(
                   '${entry.time}  •  ${entry.intensity}',
                   style: const TextStyle(fontSize: 12, color: Colors.black54),
@@ -285,19 +328,32 @@ class _ExercisePageState extends State<ExercisePage> {
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '${entry.durationMinutes} min',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '${entry.caloriesBurned} kcal',
-                style: const TextStyle(fontSize: 12, color: Colors.black54),
-              ),
-            ],
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: Text(
+                    '${entry.durationMinutes} min',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                ),
+                Text(
+                  '${entry.caloriesBurned} kcal',
+                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            color: Colors.black54,
+            tooltip: 'Delete',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            onPressed: () => _deleteExercise(entry),
           ),
         ],
       ),

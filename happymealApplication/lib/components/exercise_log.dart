@@ -9,6 +9,8 @@ class ExerciseLogEntry {
   final int durationMinutes;
   final int caloriesBurned;
   final IconData icon;
+  final String userId;
+  final bool isDelete;
   String dbId;
 
   ExerciseLogEntry({
@@ -18,6 +20,8 @@ class ExerciseLogEntry {
     required this.durationMinutes,
     required this.caloriesBurned,
     required this.icon,
+    this.userId = '',
+    this.isDelete = false,
     this.dbId = '',
   });
 
@@ -32,6 +36,8 @@ class ExerciseLogEntry {
         snapshot['iconCodePoint'] as int? ?? Icons.fitness_center.codePoint,
         fontFamily: 'MaterialIcons',
       ),
+      userId: snapshot['userId'] as String? ?? '',
+      isDelete: snapshot['isDelete'] as bool? ?? false,
     );
   }
 
@@ -43,6 +49,8 @@ class ExerciseLogEntry {
       'durationMinutes': durationMinutes,
       'caloriesBurned': caloriesBurned,
       'iconCodePoint': icon.codePoint,
+      'userId': userId,
+      'isDelete': isDelete,
     };
   }
 }

@@ -55,8 +55,10 @@ class ExerciseTypeCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(data.icon, size: 36),
-          const SizedBox(width: 12),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Icon(data.icon, size: 36),
+          ),
           Expanded(
             child: Text(
               data.name,

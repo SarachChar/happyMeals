@@ -17,7 +17,10 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      return web;
+      throw UnsupportedError(
+        'DefaultFirebaseOptions have not been configured for web - '
+        'you can reconfigure this by running the FlutterFire CLI again.',
+      );
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -49,20 +52,11 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBtgjoulaftILLMYRIEBIll9Ba0EKhmCKk',
-    appId: '1:218386116216:web:391d70a37403447e67078d',
-    messagingSenderId: '218386116216',
-    projectId: 'is767-2025-3-pong',
-    authDomain: 'is767-2025-3-pong.firebaseapp.com',
-    storageBucket: 'is767-2025-3-pong.firebasestorage.app',
-  );
-
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAoUyp4uP-MiyUlBwyRNpxdy1y8gj31jig',
-    appId: '1:218386116216:android:9e1c19032c8f88dd67078d',
-    messagingSenderId: '218386116216',
-    projectId: 'is767-2025-3-pong',
-    storageBucket: 'is767-2025-3-pong.firebasestorage.app',
+    apiKey: 'AIzaSyBo4WTIqg2nIzpBXiBUKUYkG5sczuKHjp8',
+    appId: '1:513884943046:android:1421d976f54cd244c31dc7',
+    messagingSenderId: '513884943046',
+    projectId: 'is767-2025-3-missthee',
+    storageBucket: 'is767-2025-3-missthee.firebasestorage.app',
   );
 }
